@@ -1,0 +1,73 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta name="generator" content="Hexo 3.8.0"><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta name="description" content="Redis从入门到精通(七、Redis Sentinel)"><meta name="keywords" content="Redis"><meta name="author" content="Wang Kai"><meta name="copyright" content="Wang Kai"><title>Redis从入门到精通(七、Redis Sentinel) | Fantasy</title><link rel="shortcut icon" href="/melody-favicon.ico"><link rel="stylesheet" href="/css/index.css?version=1.6.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css?version=1.6.1"><link rel="dns-prefetch" href="https://cdn.staticfile.org"><link rel="dns-prefetch" href="https://cdn.bootcss.com"><link rel="dns-prefetch" href="https://creativecommons.org"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  }
+} </script></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar"><div class="toggle-sidebar-info text-center"><span data-toggle="切换文章详情">切换站点概览</span><hr></div><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar"></div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#配置"><span class="toc-text">配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#启动"><span class="toc-text">启动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Sentinel-解析"><span class="toc-text">Sentinel 解析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Sentinel-实例之间的通信"><span class="toc-text">Sentinel 实例之间的通信</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#SDOWN-和-ODOWN状态"><span class="toc-text">SDOWN 和 ODOWN状态</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Slave-选择和优先权"><span class="toc-text">Slave 选择和优先权</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#分区下的一致性"><span class="toc-text">分区下的一致性</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Sentinel-persistent-state"><span class="toc-text">Sentinel persistent state</span></a></li></ol></li></ol></div></div><div class="author-info hide"><div class="author-info__avatar text-center"><img src="https://avatars3.githubusercontent.com/u/13445354?s=460&amp;v=4"></div><div class="author-info__name text-center">Wang Kai</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">文章</span><span class="pull-right">9</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">标签</span><span class="pull-right">3</span></a><a class="author-info-articles__categories article-meta" href="/categories"><span class="pull-left">分类</span><span class="pull-right">3</span></a></div></div></div><div id="content-outer"><div id="top-container" style="background-image: url(http://static.simpledesktops.com/uploads/desktops/2011/08/13/daftPunk.png)"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">Fantasy</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus"><a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/categories">Categories</a><a class="site-page" href="https://github.com/fantasygg">GitHub</a></span></div><div id="post-info"><div id="post-title">Redis从入门到精通(七、Redis Sentinel)</div><div id="post-meta"><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2019-05-08</time><span class="post-meta__separator">|</span><i class="fa fa-inbox post-meta__icon" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/Redis从入门到精通/">Redis从入门到精通</a></div></div></div><div class="layout" id="content-inner"><article id="post"><div class="article-container" id="post-content"><p>Redis Sentinel 是 Redis官方提供的高可用解决方案。Redis本身可以实现主从复制,但是并没有自动切换主备的功能,当出现其中一个主实例宕机的情况,客户端将无法执行写入命令,Sentinel可以在没有人工干预的情况下执行故障转移,不影响正常的写入操作。Sentinel是一个分布式的系统,多个Sentinel进程之间协调工作,一来保证故障检测的误报率,二来保证了Sentinel本身的可用性。</p>
+<a id="more"></a>
+<p>Sentinel提供了以下功能:</p>
+<ul>
+<li>监控。Sentinel会不断检查主从是否按预期工作。</li>
+<li>通知。Sentinel可以通过API通知系统管理员，另一台计算机程序，其中一个受监控的Redis实例出现问题。</li>
+<li>自动故障转移。如果主服务器未按预期工作，Sentinel可以启动故障转移过程，其中从服务器升级为主服务器，其他其他服务器重新配置为使用新主服务器，并且使用Redis服务器的应用程序通知有关新服务器的地址连接。</li>
+<li>配置提供商。Sentinel充当客户端服务发现的权限来源：客户端连接到Sentinels，以便询问负责给定服务的当前Redis主服务器的地址。如果发生故障转移，Sentinels将报告新地址。</li>
+</ul>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>我挑了一些主要的配置项出来,其它的都与redis.conf类似</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># sentinel announce-ip &lt;ip&gt;</span><br><span class="line"># sentinel announce-port &lt;port&gt;</span><br><span class="line"></span><br><span class="line">sentinel auth-pass mymaster &lt;password&gt;</span><br><span class="line"></span><br><span class="line"># sentinel monitor &lt;master-group-name&gt; &lt;ip&gt; &lt;port&gt; &lt;quorm&gt;</span><br><span class="line">sentinel monitor mymaster 127.0.0.1 6379 2</span><br><span class="line"></span><br><span class="line"># sentinel down-after-milliseconds &lt;master-name&gt; &lt;milliseconds&gt;</span><br><span class="line">sentinel down-after-milliseconds mymaster 30000</span><br><span class="line"></span><br><span class="line"># sentinel parallel-syncs &lt;master-name&gt; &lt;numreplicas&gt;</span><br><span class="line">sentinel parallel-syncs mymaster 1</span><br><span class="line"></span><br><span class="line"># sentinel failover-timeout &lt;master-name&gt; &lt;milliseconds&gt;</span><br><span class="line">sentinel failover-timeout mymaster 180000</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>sentinel auth-pass &lt;master-group-name&gt; &lt;password&gt;</code> ,配置主服务器的密码</li>
+<li><code>sentinel monitor &lt;master-group-name&gt; &lt;ip&gt; &lt;port&gt; &lt;quorm&gt;</code>,配置需要监视的主服务器,最后一个为 <code>仲裁参数</code> ,代表Sentinel集群中必须有至少2个实例认为主服务器不可用,其中一个尝试启动故障转移,默认 <code>127.0.0.1 6379 2</code></li>
+<li><code>sentinel down-after-milliseconds &lt;master-name&gt; &lt;milliseconds&gt;</code> , 主服务器未回复sentinel ping的时长,如果超过这个时长,则这个sentinel实例主观的认为主服务器不可用,默认<code>3000</code></li>
+<li><code>sentinel parallel-syncs &lt;master-name&gt; &lt;numreplicas&gt;</code> , 设置可在同一故障转移后重新配置以使用新主服务器的从服务器数,默认 <code>1</code></li>
+<li><code>sentinel failover-timeout &lt;master-name&gt; &lt;milliseconds&gt;</code> ,指定故障转移超时时长,默认 <code>180000</code></li>
+</ul>
+<h3 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h3><p>可以通过以下两种方式开启Sentinel:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">redis-server sentinel.conf --sentinel</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">redis-sentinel sentinel.conf</span><br></pre></td></tr></table></figure>
+<h3 id="Sentinel-解析"><a href="#Sentinel-解析" class="headerlink" title="Sentinel 解析"></a>Sentinel 解析</h3><p>任何一个sentinel实例主要达到SDOWN的条件,就将该服务器标记为 SDOWN,如果有至少 <code>qurom</code> 个实例都认为该服务器SDOWN,就标记为 ODOWN,此时触发故障转移,需要满足大多数Sentinel实例的授权才能进行故障转移。例设有5个sentinel 实例,配置 qurom 为 2 , 5个实例,有2个认为服务器无法访问,就尝试故障转移,只有3个或以上实例授权后才能执行故障转移,如果qurom设置为5,则当ODOWN时,直接进行故障转移。</p>
+<h4 id="Sentinel-实例之间的通信"><a href="#Sentinel-实例之间的通信" class="headerlink" title="Sentinel 实例之间的通信"></a>Sentinel 实例之间的通信</h4><p>Sentinel 实例之间通过名为 <code>__sentinel__:hello</code> 的 Pub/Sub channel 进行通信</p>
+<ul>
+<li>每个 Sentinel 每隔2秒向 channel 中发送 ip port runid 宣布它的存在</li>
+<li>每个 Sentinel 订阅 channel ,当检测到新的 Sentinel 后,将它添加进集群中</li>
+<li>消息中包括完整的当前服务器的配置,如果某个Sentinel 还是旧的服务器的配置,将会立刻更新</li>
+<li>在向主服务器添加新的标记之前，Sentinel始终检查是否已存在具有相同runid或相同地址（ip和端口对）的标记。在这种情况下，将删除所有匹配的标记，并添加新的标记。</li>
+</ul>
+<h4 id="SDOWN-和-ODOWN状态"><a href="#SDOWN-和-ODOWN状态" class="headerlink" title="SDOWN 和 ODOWN状态"></a>SDOWN 和 ODOWN状态</h4><ul>
+<li>Subjectively Down(SDOWN,主观下线),单个实例对服务器做出的下线判断</li>
+<li>Objectively Down(ODOWN,客观下线),多个实例对同一个服务器做出的下线判断,并且多个实例之间已经通过 <code>SENTINEL is-master-down-by-addr</code> 交流之后做出的下线判断。</li>
+</ul>
+<p>Sentinel 每隔1秒向服务器发出 ping 命令,如果服务器距离上次回复ping 已经超过了 <code>down-after-milliseconds</code> 所设置的时长,或者不是以下三个中的命令时,sentinel 认为这个服务器下线了(主观下线):</p>
+<ul>
+<li>+PONG</li>
+<li>-LOADING</li>
+<li>-MASTERDOWN</li>
+</ul>
+<p>当多个sentinel实例(qurom)对同一个服务器做出主观下线的判断后,状态变为 <code>ODOWN</code></p>
+<h4 id="Slave-选择和优先权"><a href="#Slave-选择和优先权" class="headerlink" title="Slave 选择和优先权"></a>Slave 选择和优先权</h4><p>当Sentinel开始执行故障转移时,需要在 从服务器之间选出一个,来提升为主服务器,只要参考以下4个方面:</p>
+<ol>
+<li>与原主服务器断开连接的时长</li>
+<li>Slave priority,在 redis.conf 中有配置 <code>slave-priority</code>,默认为100,数字越小将越优先</li>
+<li>已经处理的复制偏移量</li>
+<li>Run ID</li>
+</ol>
+<h4 id="分区下的一致性"><a href="#分区下的一致性" class="headerlink" title="分区下的一致性"></a>分区下的一致性</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">            +-------------+</span><br><span class="line">            | Sentinel 1  | &lt;--- Client A</span><br><span class="line">            | Redis 1 (M) |</span><br><span class="line">            +-------------+</span><br><span class="line">                    |</span><br><span class="line">                    |</span><br><span class="line">+-------------+     |                     +------------+</span><br><span class="line">| Sentinel 2  |-----+-- / partition / ----| Sentinel 3 | &lt;--- Client B</span><br><span class="line">| Redis 2 (S) |                           | Redis 3 (M)|</span><br><span class="line">+-------------+                           +------------+</span><br></pre></td></tr></table></figure>
+<p>初始状态下redis3是master, redis1和redis2是slave。之后redis3所在的主机网络不可用了，sentinel1和sentinel2启动了failover并把redis1选举为master。</p>
+<p>Sentinel集群的特性保证了sentinel1和sentinel2得到了关于master的最新配置。但是sentinel3依然持着的是旧的配置，因为它与外界隔离了。</p>
+<p>客户端将依然可以向redis3写数据，但是当网络恢复后，redis3就会变成redis的一个slave，那么，在网络隔离期间，客户端向redis3写的数据将会丢失。</p>
+<p>如果你把redis当做缓存来使用，那么你也许能容忍这部分数据的丢失。<br>但如果你把redis当做一个存储系统来使用，你也许就无法容忍这部分数据的丢失了。</p>
+<p>因为redis采用的是异步复制，在这样的场景下，没有办法避免数据的丢失。然而，你可以通过以下配置来配置redis3和redis1，使得数据不会丢失。</p>
+<p>可以通过下面2个参数进行配置,保证只要有一个从服务器断开了与主服务器的连接就不执行写入操作。具体可以参考 <a href="/2019/05/07/redis-6-repl">Redis从入门到精通(六、Redis主从复制)</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">min-slaves-to-write 1</span><br><span class="line">min-slaves-max-lag 10</span><br></pre></td></tr></table></figure>
+<h4 id="Sentinel-persistent-state"><a href="#Sentinel-persistent-state" class="headerlink" title="Sentinel persistent state"></a>Sentinel persistent state</h4><p>Sentinel状态保留在sentinel配置文件中。这意味着停止并重新启动Sentinel进程是安全的。</p>
+<hr>
+<p>更多详细资料参考:</p>
+<p><a href="https://redis.io/topics/sentinel" target="_blank" rel="noopener">Redis Sentinel 官方文档</a></p>
+</div></article><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Redis/">Redis</a></div><nav id="pagination"><div class="next-post pull-right"><a href="/2019/05/07/redis-6-repl/"><span>Redis从入门到精通(六、Redis主从复制)</span><i class="fa fa-chevron-right"></i></a></div></nav></div></div><footer class="footer-bg" style="background-image: url(http://static.simpledesktops.com/uploads/desktops/2011/08/13/daftPunk.png)"><div class="layout" id="footer"><div class="copyright">&copy;2019 By Wang Kai</div><div class="framework-info"><span>驱动 - </span><a href="http://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 - </span><a href="https://github.com/Molunerfinn/hexo-theme-melody"><span>Melody</span></a></div><div class="busuanzi"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><span id="busuanzi_container_page_pv"><i class="fa fa-file-o"></i><span id="busuanzi_value_page_pv"></span><span></span></span></div></div></footer><i class="fa fa-arrow-up" id="go-up" aria-hidden="true"></i><script src="https://cdn.jsdelivr.net/npm/animejs@latest/anime.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@latest/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-ui-pack@latest/velocity.ui.min.js"></script><script src="/js/utils.js?version=1.6.1"></script><script src="/js/fancybox.js?version=1.6.1"></script><script src="/js/sidebar.js?version=1.6.1"></script><script src="/js/copy.js?version=1.6.1"></script><script src="/js/fireworks.js?version=1.6.1"></script><script src="/js/transition.js?version=1.6.1"></script><script src="/js/scroll.js?version=1.6.1"></script><script src="/js/head.js?version=1.6.1"></script><script>if(/Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent)) {
+  $('#nav').addClass('is-mobile')
+  $('footer').addClass('is-mobile')
+}</script></body></html>
