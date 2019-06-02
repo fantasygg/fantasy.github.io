@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="董沅鑫, yuanxin.me@gmail.com">
+  
+  
+  
+  <title>Redis从入门到精通(六、Redis主从复制) | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Redis从入门到精通,Redis,">
+  
+
+  <script>
+    console.log('\n%c Hexo-theme-bmw v4.0 ' + '%c 🎉 https://github.com/dongyuanxin/theme-bmw 🎉\n' + '\n%c View demo online ' + '%c 🔍 https://godbmw.com/ 🔍  \n' , 'color: #fadfa3; background: #030307; padding:3px 0;', '', 'color: #fadfa3; background: #030307; padding:3px 0;', '');
+  </script>
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/fantasygg">
+          
+            <a href="https://github.com/fantasygg" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Redis从入门到精通(六、Redis主从复制)</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-05-07
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Redis从入门到精通/">
+            Redis从入门到精通
+          </a>
+      </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="Replication"><a href="#Replication" class="headerlink" title="Replication"></a>Replication</h2><p>Redis提供了replication模式来实现主从复制。</p>
+<p>replication主要依赖于以下三个机制:</p>
+<ul>
+<li>当master和slave连接正常时,matser向slave发送命令来保持slave的更新,包括数据的写入,过期,逐出</li>
+<li>当slave与master的连接断开,slave重新连接之后,slave会尝试进行增量同步①,只更新连接中断期间的数据</li>
+<li>当slave无法执行增量同步时,会执行全量同步②</li>
+</ul>
+<p>(1) 增量同步</p>
+<p>slave 由于某些原因与 master 断开连接,重新连接之后,只需要同步着期间缺少的数据</p>
+<p>(2) 全量同步</p>
+<p>master 执行 <code>BGSAVE</code> 指令,完成后将快照文件传输给 slave</p>
+<h3 id="Replication特点"><a href="#Replication特点" class="headerlink" title="Replication特点"></a>Replication特点</h3><p>Redis的replication有以下特点需要了解：</p>
+<ul>
+<li>Redis使用异步复制，主从之间异步的确认数据同步的数量</li>
+<li>一个主可以有多个从</li>
+<li>从还可以有从。从4.0版本开始，所有的从将会从master接受到完全一样的数据①</li>
+<li>复制在主服务器上是异步的,这意味着主可以在给多台从服务器器同步时还可以处理客户端的请求</li>
+<li>复制在从服务器上也是异步的,如果从服务器在复制期间有客户端请求,从服务器将会从旧的数据集中返回数据。可以在配置项中进行配置</li>
+<li>复制可以用于扩展读请求(实现读写分离)</li>
+<li>可以使用复制来避免将全部数据写入磁盘的开销②</li>
+</ul>
+<p>(1) 从服务器的数据只会从最原始的主服务器获得</p>
+<p>例如，A –&gt; B –&gt; C,存在这样一条主从链,B设置为可以进行写入操作,那么C不会获得B中写入的数据,只能获得A中的数据集</p>
+<p>(2) 不推荐这么做,在主从重新连接时,从服务器的数据如果没办法进行增量同步,将会删除本地所有的数据,再同步主服务器上的数据,所以最好还是开启持久化</p>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">slaveof &lt;masterip&gt; &lt;masterport&gt;</span><br><span class="line">masterauth &lt;master-password&gt;</span><br><span class="line">slave-serve-stale-data yes # 是否异步复制</span><br><span class="line">slave-read-only yes</span><br><span class="line">repl-diskless-sync no # 无盘复制</span><br><span class="line">repl-diskless-sync-delay 5</span><br><span class="line">repl-ping-slave-period 10</span><br><span class="line">repl-timeout 60</span><br><span class="line">repl-disable-tcp-nodelay no</span><br><span class="line">repl-backlog-size 1mb</span><br><span class="line">repl-backlog-ttl 3600</span><br><span class="line">slave-priority 100</span><br><span class="line">min-slaves-to-write 3</span><br><span class="line">min-slaves-max-lag 10</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>slaveof &lt;masterip&gt; &lt;masterport&gt;</code> 设置从哪台Redis服务器同步数据</li>
+<li><code>masterauth &lt;master-password&gt;</code> 设置master的密码</li>
+<li><code>slave-serve-stale-data</code> 在同步数据时是否异步处理客户端请求①</li>
+<li><code>slave-read-only</code> 是否开启只读，默认 <code>yes</code> 开启</li>
+<li><code>repl-diskless-sync</code> 是否开启无盘复制②,默认为 <code>no</code></li>
+<li><code>repl-diskless-sync-delay</code> 无盘复制延时,默认为 <code>5</code>,单位秒(s)</li>
+<li><code>repl-ping-slave-period</code> slave 发送ping的时间间隔,默认为 <code>10</code>,单位秒(s)</li>
+<li><code>repl-timeout</code> 复制超时时长,默认 <code>60</code> ,单位秒(s)</li>
+<li><code>repl-disable-tcp-nodelay</code> 是否在同步完成之后禁用<code>TCP_NODELAY</code>,默认为 <code>no</code></li>
+<li><code>repl-backlog-size</code> backlog 体积,默认 <code>1mb</code></li>
+<li><code>repl-backlog-ttl</code> backlog 过期时长,默认 <code>3600</code>,单位秒(s)</li>
+<li><code>slave-priority</code> 从服务器权重③</li>
+<li><code>min-slaves-to-write</code> ④达到指定从服务器个数才开启写入功能,设置为0表示禁用此项,默认情况下为0</li>
+<li><code>min-slaves-max-lag</code> 从服务器最大滞后时间,如果超过该时长,将关闭写入功能 ,默认为<code>10</code></li>
+</ul>
+<p>(1) 异步复制的同时处理客户端请求</p>
+<p>Redis可能会从旧的数据集中返回数据给客户端,如果没有旧的数据集则返回空</p>
+<p>(2) 无盘复制</p>
+<p>子进程直接通过网络将RDB文件发给slave,不用使用磁盘作为中间存储</p>
+<p>(3) slave-priority</p>
+<p>在Redis的哨兵中,检测Redis可用性,如果master不可用,哨兵将会依据此项来选取从服务器提升为主服务器</p>
+<p>(4) 达到N个从服务才开启写入查询</p>
+<p>由于Redis的异步复制,无法保证slave接收到数据,这将存在一段丢失数据的窗口期。</p>
+<p>slave每秒向master发送ping,确认处理的数据量,master会记录每个slave最后一次ping的时间,通过配置<code>min-slaves-to-write N</code> 和 <code>min-slaves-max-lag M</code> 来控制master的写入查询, 如果至少有N个slave，滞后小于M秒,master则接受写入；如果不满足条件,则返回error。</p>
+<p>这是一种尽力保证数据安全的机制。其中对于给定的写入不确保一致性，但是至少数据丢失的时间窗口被限制为给定的秒数。通常，绑定数据丢失优于未绑定数据丢失。</p>
+<h3 id="工作机制"><a href="#工作机制" class="headerlink" title="工作机制"></a>工作机制</h3><ol>
+<li><code>slave</code> 启动，仅仅保存 <code>master</code> 的信息，包括 <code>master</code> 的host和ip，但是复制流程没开始(master的host和ip是通过redis.conf里面的slaveof配置的)</li>
+<li><code>slave</code> 内部有个定时任务，每秒检查是否有新的 <code>master</code> 要连接和复制，如果发现，就跟<code>master</code> 建立socket网络连接</li>
+<li><code>slave</code> 发送ping命令给<code>master</code></li>
+<li>口令认证，如果master设置了requirepass，那么 <code>slave</code> 必须发送<code>masterauth</code> 的口令过去进行认证</li>
+<li><code>master</code> 第一次执行全量复制，将所有数据发给slave node</li>
+<li><code>master</code> 后续持续将写命令，异步复制给<code>slave</code></li>
+</ol>
+<h4 id="从服务器怎么处理过期key"><a href="#从服务器怎么处理过期key" class="headerlink" title="从服务器怎么处理过期key"></a>从服务器怎么处理过期key</h4><p>从服务器并不会主动过期数据集中的数据,主服务器在数据过期或被逐出的时候会向从服务器发送一条del的命令,将从服务器中对应的数据删除</p>
+<h4 id="什么时候执行全量同步-什么时候执行增量同步？"><a href="#什么时候执行全量同步-什么时候执行增量同步？" class="headerlink" title="什么时候执行全量同步,什么时候执行增量同步？"></a>什么时候执行全量同步,什么时候执行增量同步？</h4><p>要理解全量,增量同步的机制,先要理解Redis复制中的三个概念:</p>
+<ul>
+<li>Replication ID(复制ID),标记数据集的给定历史记录。每次实例从头开始作为主服务器重新启动，或者从服务器提升为主服务器时，将为此实例生成新的复制ID。连接到主服务器的从服务器将在握手后继承其复制ID。</li>
+<li>offset(偏移量),每个主服务器还会为生成的每个复制流字节递增一个偏移量，以便将其发送到从服务器,从服务器也会保存这个值。</li>
+<li>backlog(缓冲区),从服务器断开与主服务器的连接之后,主服务器会暂时将数据存入backlog,默认1mb,有过期时间。<code>master</code> 给<code>slave</code> 复制数据时，也会将数据在backlog中同步写一份,backlog主要是用来做全量复制中断候的增量复制的</li>
+</ul>
+<p>从服务器由于某些原因断开与主服务器的连接,再次连接后,从服务器上报当前的<code>Replication ID</code> 和 <code>offset</code> ,如果<code>Replication ID</code> 不一致则进行全量同步,如果一致则判断 <code>offset</code> ,这区间的数据如果还存在 <code>backlog</code> 中,就进行 <strong>增量同步</strong>,否则进行全量同步。(从节点执行 <code>psync</code> ,master 返回 <code>FULLRESYNC runid offset</code> 进行全量同步,<code>CONTINUE</code> 进行增量同步)</p>
+<hr>
+<p>更多详细资料参考:</p>
+<p><a href="https://redis.io/topics/replication" target="_blank" rel="noopener">Redis复制-官方文档</a></p>
+<p><a href="http://redisinaction.com/" target="_blank" rel="noopener">Redis实战</a></p>
+<hr>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-6-repl/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Redis/">
+              #Redis
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/redis-5-transaction/" target="_self">Redis从入门到精通(五、Redis的事务)</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/redis-7-sentinel/" target="_self">Redis从入门到精通(七、Redis Sentinel)</a>
+        <i class="iconfont icon-next"></i>
+      </div>
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>

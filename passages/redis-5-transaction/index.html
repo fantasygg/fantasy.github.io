@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="董沅鑫, yuanxin.me@gmail.com">
+  
+  
+  
+  <title>Redis从入门到精通(五、Redis的事务) | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Redis从入门到精通,Redis,">
+  
+
+  <script>
+    console.log('\n%c Hexo-theme-bmw v4.0 ' + '%c 🎉 https://github.com/dongyuanxin/theme-bmw 🎉\n' + '\n%c View demo online ' + '%c 🔍 https://godbmw.com/ 🔍  \n' , 'color: #fadfa3; background: #030307; padding:3px 0;', '', 'color: #fadfa3; background: #030307; padding:3px 0;', '');
+  </script>
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/fantasygg">
+          
+            <a href="https://github.com/fantasygg" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Redis从入门到精通(五、Redis的事务)</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-05-05
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Redis从入门到精通/">
+            Redis从入门到精通
+          </a>
+      </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h3 id="Redis-事务介绍"><a href="#Redis-事务介绍" class="headerlink" title="Redis 事务介绍"></a>Redis 事务介绍</h3><p>提到事务,我们可能马上会想到传统的关系型数据库中的事务,客户端首先向服务器发送 <code>BEGIN</code> 开启事务,然后执行读写操作,最后用户发送 <code>COMMIT</code> 或者 <code>ROLLBACK</code> 来提交或者回滚之前的操作。但是Redis中的事务与关系型数据库是不一样的,Redis 通过 <code>MULTI</code> 命令开始,之后输入一连串的操作,最终以 <code>EXEC</code> 结束,在这之间输入的所有的命令都会在 <code>EXEC</code> 之后一起发给Redis执行,所以在这之间用户无法通过读取到的结果做处理,这与关系型数据库的事务是由很大的不同的。Redis会在执行完成之后返回一组执行结果。Redis中并没有回滚的操作,这一点会在后面说到。</p>
+<p>Redis的这种延迟执行事务会有助于提升性能,客户端会在收到 <code>EXEC</code> 命令之后再将这一系列的命令一起发给Redis,然后等待Redis的回复,这种 <code>一次性发送多条指令,然后等待回复</code> 的做法称为流水线(pipeline)模式,它可以通过减少客户端与服务器之间的网络通信次数来提高Redis执行多个命令的性能。</p>
+<p>Redis通过以下两点保证事务:</p>
+<ul>
+<li>事务中的所有命令都被序列化并按顺序执行，在执行事务的过程中不会去执行其他客户端的命令，保证命令作为单个隔离操作进行</li>
+<li>要么处理所有命令，要么不处理。保证原子性。如果开启了AOF，Redis会使用单个write命令将事务写入文件中，如果因为某些原因导致AOF写入被截断，在重启时redis会报错，使用 <code>redis-check-aof</code> 工具可以修复这个错误(删除掉这个事务相关的命令),保证Redis能够重新启动</li>
+</ul>
+<h3 id="Redis-事务示例"><a href="#Redis-事务示例" class="headerlink" title="Redis 事务示例"></a>Redis 事务示例</h3><p>下面我们来看一些示例:</p>
+<h4 id="MULTI-EXEC"><a href="#MULTI-EXEC" class="headerlink" title="MULTI EXEC"></a>MULTI EXEC</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379[2]&gt; set foo 1</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; set bar 1</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; INCR foo</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; INCR bar</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; EXEC</span><br><span class="line">1) (integer) 2</span><br><span class="line">2) (integer) 2</span><br><span class="line">127.0.0.1:6379[2]&gt;</span><br></pre></td></tr></table></figure>
+<p>可以看到在执行 <code>MULTI</code> 之后会返回 <code>OK</code> 表示状态回复,然后执行两个 <code>INCR</code> 操作,会返回 <code>QUEUED</code> 表示已经进入到队列当中,最后执行 <code>EXEC</code> 命令,上述所有命令会一起发送到Redis,然后收到Redis的一组回复。</p>
+<h4 id="DISCARD"><a href="#DISCARD" class="headerlink" title="DISCARD"></a>DISCARD</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379[2]&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; set test 09876</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; DISCARD</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; get test</span><br><span class="line">&quot;1234&quot;</span><br><span class="line">127.0.0.1:6379[2]&gt;</span><br></pre></td></tr></table></figure>
+<p><code>DICARD</code> 可以取消事务</p>
+<h4 id="命令出现语法错误"><a href="#命令出现语法错误" class="headerlink" title="命令出现语法错误"></a>命令出现语法错误</h4><p>下面来看以下如果这其中有语法错误的命令会怎么样:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379[2]&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; set test 1234</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; lpush test 12345</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; EXEC</span><br><span class="line">1) OK</span><br><span class="line">2) (error) WRONGTYPE Operation against a key holding the wrong kind of value</span><br><span class="line">127.0.0.1:6379[2]&gt; get test</span><br><span class="line">&quot;1234&quot;</span><br></pre></td></tr></table></figure>
+<p>可以看到,最终返回结果是<code>set</code> 命令执行成功,而 <code>lpush</code> 命令执行失败,通过 <code>get test</code> 命令,可以看到它的值是<code>1234</code>。可以看到,即使后续的命令出现了错误,前面已经执行成功的命令也不会回滚,同样也不会影响后续命令。</p>
+<h3 id="Redis事务不支持回滚"><a href="#Redis事务不支持回滚" class="headerlink" title="Redis事务不支持回滚"></a>Redis事务不支持回滚</h3><p>Redis认为只有<strong>语法出现错误</strong>时才会导致事务的失败,并且Redis的速度够快，不需要回滚的能力。Redis官方给出的解释是(我做了一下翻译):</p>
+<blockquote>
+<p>如果你有关系型数据库的相关经验,实际上Redis命令在事务期间可能会出现失败的情况,但是Redis仍然执行了事务中剩余的命令而不是回滚,在你看来这可能很荒谬。</p>
+<p>但是对于这种操作有以下很好的见解:</p>
+<ul>
+<li>Redis 命令只有在出现语法错的情况下才会导致失败(这个问题没办法再入队列期间检测到),或者这个key是错误的数据类型: 这意味着是编程错误造成的命令失败,在开发过程中就应该检查到这种错误中,而不是到生产中才发现</li>
+<li>Redis 内部简单而且速度很快,不需要回滚的能力</li>
+</ul>
+<p>一种反对Redis的观点是bug是会发生的,但是通常回滚并不能解决编程错误所造成的结果.例如,如果查询一个key并递增了2而不是1,或者递增了错误的key,回滚机制将没办法提供帮助.考虑到没有人解决编程错误,而且Redis命令的失败并不太可能进入生产环境,所以我们选择了不支持事务回滚的更快,更简单的做法.</p>
+</blockquote>
+<h3 id="WATCH命令的使用"><a href="#WATCH命令的使用" class="headerlink" title="WATCH命令的使用"></a>WATCH命令的使用</h3><p>Redis使用<code>WATCH</code> 来解决key的竞争问题，类似于 <code>CAS</code> 操作，来保证多个客户端同时修改一个key的情况,只能有一个客户端修改成功。</p>
+<p>我用下面的示例演示一下A,B两个客户端竞争一个Key的情况:</p>
+<p>Client A</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379[2]&gt; GET count</span><br><span class="line">&quot;1&quot;</span><br><span class="line">127.0.0.1:6379[2]&gt; WATCH count</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; incr count</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; incr count</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; EXEC</span><br><span class="line">(nil)</span><br></pre></td></tr></table></figure>
+<p>Client B</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379[2]&gt; incr count</span><br><span class="line">(integer) 2</span><br></pre></td></tr></table></figure>
+<p>在A客户端<code>WATCH  count</code>之后,如果B客户端执行了修改<code>count</code> 这个key的操作,那么A客户端在 <code>EXEC</code> 之后会返回 <code>nil</code> 没有进行任何操作。</p>
+<p>我们在来看一组没有竞争的情况:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379[2]&gt; get count</span><br><span class="line">&quot;3&quot;</span><br><span class="line">127.0.0.1:6379[2]&gt; WATCH count</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379[2]&gt; INCR count</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; INCR count</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379[2]&gt; EXEC</span><br><span class="line">1) (integer) 4</span><br><span class="line">2) (integer) 5</span><br></pre></td></tr></table></figure>
+<p>在没有多个客户端竞争的情况下,事务正常执行。</p>
+<p>Redis并没有用典型的加锁功能来解决key的竞争问题,主要原因是出于性能的考虑。回顾一下关系型数据库中的事务,在访问以写入为目的的数据时,数据库会对被访问的数据加锁,直到提交或回滚之后才释放锁,如果此时另一个客户端也这部分数据进行写入操作,客户端将会被阻塞,直到上一个事务结束。这种加锁的方式称为<strong>悲观锁</strong>,它的缺点在于持有锁的客户端持有锁的时间越长,其它客户端被阻塞的时间就越长。Redis为了减少客户端等待的时间,并不会在执行<code>WATCH</code> 命令后对数据进行加锁,而是如果有其他客户端抢先修改了数据的情况下通知执行了 <code>WATCH</code> 的客户端,这种做法叫做<strong>乐观锁</strong>。我们只需在客户端执行事务失败之后进行重试的逻辑即可。</p>
+<hr>
+<p>更多详细的资料参考:</p>
+<p><a href="https://redis.io/topics/transactions" target="_blank" rel="noopener">Redis事务官方文档</a></p>
+<p><a href="http://redisinaction.com/" target="_blank" rel="noopener">Redis实战</a></p>
+<hr>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-5-transaction/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Redis/">
+              #Redis
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/redis-4-persistence/" target="_self">Redis从入门到精通(四、Redis的持久化和数据备份与恢复)</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/redis-6-repl/" target="_self">Redis从入门到精通(六、Redis主从复制)</a>
+        <i class="iconfont icon-next"></i>
+      </div>
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>

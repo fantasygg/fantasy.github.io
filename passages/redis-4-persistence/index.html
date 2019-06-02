@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="董沅鑫, yuanxin.me@gmail.com">
+  
+  
+  
+  <title>Redis从入门到精通(四、Redis的持久化和数据备份与恢复) | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Redis从入门到精通,Redis,">
+  
+
+  <script>
+    console.log('\n%c Hexo-theme-bmw v4.0 ' + '%c 🎉 https://github.com/dongyuanxin/theme-bmw 🎉\n' + '\n%c View demo online ' + '%c 🔍 https://godbmw.com/ 🔍  \n' , 'color: #fadfa3; background: #030307; padding:3px 0;', '', 'color: #fadfa3; background: #030307; padding:3px 0;', '');
+  </script>
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/fantasygg">
+          
+            <a href="https://github.com/fantasygg" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Redis从入门到精通(四、Redis的持久化和数据备份与恢复)</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-05-04
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Redis从入门到精通/">
+            Redis从入门到精通
+          </a>
+      </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <p>Redis提供了两种持久化的选项,一种是<strong>快照文件(snapshotting,RDB)</strong>,它会基于某个时间点将数据全部写入硬盘中(默认为<code>dump.rdb</code>)。另一种是<strong>只追加文件(append-only,AOF)</strong>,它会在执行写入命令时将命令写入到硬盘中。</p>
+<p>Redis持久化数据最主要是为了<strong>数据备份,故障恢复</strong>,也有一些经过耗时较长的计算结果存在Redis中,如果这些数据存在硬盘中,即使服务器重启了之后,这些数据还是存在的,不用再去耗时计算了。</p>
+<p>这两种方式可以单独使用,也可以结合起来使用。最重要的还是要理解RDB和AOF的优劣势，结合自己的应用做一个权衡。</p>
+<h2 id="RDB-SNAPSHOTTING"><a href="#RDB-SNAPSHOTTING" class="headerlink" title="RDB (SNAPSHOTTING)"></a>RDB (SNAPSHOTTING)</h2><h3 id="RDB-配置项"><a href="#RDB-配置项" class="headerlink" title="RDB 配置项"></a>RDB 配置项</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">save 900 1</span><br><span class="line">stop-writes-on-bgsave-error yes</span><br><span class="line">rdbcompression yes</span><br><span class="line">rdbchecksum yes</span><br><span class="line">dbfilename dump.rdb</span><br><span class="line">dir ./</span><br></pre></td></tr></table></figure>
+<p>上面6项配置中,前5项均是<code>RDB</code>的配置,最后一个是<code>RDB</code> 与 <code>AOF</code> 公用的配置</p>
+<ul>
+<li><code>dir ./</code>,指定 <code>RDB</code> 和 <code>AOF</code> 文件的路径</li>
+<li><code>save 900 1</code> , 多久执行一次快照操作, 900秒内有1次写入则执行快照操作</li>
+<li><code>stop-writes-on-bgsave-error</code> , 创建快照失败后是否依然写命令,默认为<code>yes</code></li>
+<li><code>rdbcompression</code> , 是否对快照文件进行压缩,默认为 <code>yes</code></li>
+<li><code>rdbchecksum</code> , rdb文件是否启用CRC64文件数据完整性检查,5.0版本之后的属性,默认为 <code>yes</code>,开启后在 <code>save</code> 和 <code>load</code> 时将耗费 <code>10%</code>的性能,可以关闭此配置来提高性能</li>
+<li><code>dbfilename</code> , rdb文件名,默认为 <code>dump.rdb</code></li>
+</ul>
+<h3 id="RDB-详解"><a href="#RDB-详解" class="headerlink" title="RDB 详解"></a>RDB 详解</h3><p>Redis 通过创建快照的方式,获得内存中某个时间点的数据副本。Redis重启时可以从 <code>RDB</code> 文件上恢复数据。我们也可以把 <code>RDB</code> 文件备份在别的服务器上。</p>
+<p>根据上述的几个配置项,快照被写入 <code>dir</code> 目录下的 <code>dbfilename</code> 文件中。如果在新的快照文件创建完成之前,Redis服务器发生了宕机,那这期间的数据将丢失。</p>
+<p>Redis中有两个命令可以创建快照文件, <code>SAVE</code> 和 <code>BGSAVE</code>。</p>
+<ul>
+<li>执行 <code>SAVE</code> 命令后,服务器将不会再相应任何命令,直到快照文件完成。</li>
+<li>执行 <code>BGSAVE</code> 命令后,Redis父进程会调用 <code>fork</code> 来创建一个子进程,由子进程去负责快照文件的写入,父进程则继续处理客户端的命令请求。</li>
+</ul>
+<ol>
+<li>客户端可以直接向服务器发送 <code>SAVE</code> 或者 <code>BGSAVE</code></li>
+<li>如果设置了 <code>save</code> 配置项,达到配置项的要求时,Redis会自动执行 <code>BGSAVE</code> 命令。该配置项可以设置多组,如果设置了多组,只要达到其中一组的要求,就会执行<code>BGSAVE</code></li>
+<li>Redis通过<code>SHUTDOWN</code> 指令,或者接收到标准 <code>TERM</code> 信号时,会执行 <code>SAVE</code> 命令,阻塞所有客户端,直到 <code>SAVE</code> 命令执行完成后,关闭服务器</li>
+<li>Redis配置了复制集之后,从服务器向主服务器发来 <code>SYNC</code> 命令,主服务器会执行 <code>BGSAVE</code> 命令,然后将快照文件发给从服务器</li>
+</ol>
+<p>需要注意的是, 执行 <code>BGSAVE</code> 命令可能会造成服务器暂停几毫秒或者几秒,具体时长要根据数据量的大小以及服务器的配置来看。在数据量特别大,服务器内存吃紧的情况下,可能会造成长时间的停顿,甚至宕机。通常情况下, <code>BGSAVE</code> 是要比 <code>SAVE</code> 好一些,因为不会影响客户端的请求,不过在数据量巨大的情况下, <code>BGSAVE</code> 可能会比 <code>SAVE</code> 指令耗时更长。所以还是要结合具体的数据情况来选择。如果可以接受数据丢失5分钟,15分钟,1小时甚至更长时间的数据的话,甚至可以关闭自动保存,由客户端决定什么时候来执行快照副本的创建。</p>
+<h3 id="RDB-优点"><a href="#RDB-优点" class="headerlink" title="RDB 优点"></a>RDB 优点</h3><ul>
+<li>冷备份，例如:可以设置每个小时归档数据集,并备份至其他服务器,发生灾难时可以选择恢复数据集的不同副本。</li>
+<li>对 Redis 的读写影响小,最大限度的提高了性能。父进程会fork一个子进程区做数据集的归档,不会影响父进程的工作。</li>
+<li>在恢复数据集时，RDB比AOF更加高效</li>
+</ul>
+<h3 id="RDB-缺点"><a href="#RDB-缺点" class="headerlink" title="RDB 缺点"></a>RDB 缺点</h3><ul>
+<li>在发生灾难的时候，RDB会比AOF丢失的数据多。可以通过设置来更改保存点,一般设置为5分钟。</li>
+<li>RDB 每次在fork子线程来执行RDB快照文件时,如果数据文件特别大且CPU性能不佳,可能造成服务暂停几毫秒或者几秒。</li>
+</ul>
+<h2 id="AOF-append-only"><a href="#AOF-append-only" class="headerlink" title="AOF (append-only)"></a>AOF (append-only)</h2><h3 id="AOF-配置项"><a href="#AOF-配置项" class="headerlink" title="AOF 配置项"></a>AOF 配置项</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">appendonly no</span><br><span class="line">appendfilename &quot;appendonly.aof&quot;</span><br><span class="line">appendfsync everysec</span><br><span class="line">no-appendfsync-on-rewrite no</span><br><span class="line">auto-aof-rewrite-percentage 100</span><br><span class="line">auto-aof-rewrite-min-size 64mb</span><br><span class="line">aof-load-truncated yes</span><br><span class="line">aof-use-rdb-preamble yes</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>appendonly</code>,是否开启 AOF,默认为 <code>no</code></li>
+<li><code>appendfilename</code>, AOF 文件名</li>
+<li><code>appendfsync</code>  ①  ,多久才将写入的内容同步到硬盘上,有 <code>always</code>,<code>everysec</code>(默认),<code>no</code> 三种。下面对比了三种方式的性能</li>
+<li><code>no-appendfsync-on-rewrite</code> ,在重写时是否执行<code>fsync</code>操作,默认为 <code>no</code></li>
+<li><code>auto-aof-rewrite-percentage</code> ②, 当文件达到上一个文件的多少百分比时自动重写</li>
+<li><code>auto-aof-rewrite-min-size</code> ②,自动重写的最小文件体积</li>
+<li><code>aof-load-truncated</code> ③,AOF文件被截断时是否启动,默认为 <code>yes</code></li>
+<li><code>aof-use-rdb-preamble</code> ④,是否支持AOF和RDB混合使用,默认为 <code>yes</code></li>
+</ul>
+<p>(1) 关于 <code>appendfsync</code> 的说明</p>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>同步频率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> always</td>
+<td>每次执行写入操作都执行<code>fsync</code>,这将非常影响性能,严重降低Redis的吞吐</td>
+</tr>
+<tr>
+<td> everysec</td>
+<td>每隔1s执行一次 <code>fsync</code>,显示的将多个写入命令同步到硬盘,性能非常好,如果丢失数据也只是丢失1s内的数据</td>
+</tr>
+<tr>
+<td> no</td>
+<td>不执行 <code>fsync</code> ,交给操作系统去处理。一般Linux是每隔30s刷新一次数据到磁盘上,取决于内核的精准调整</td>
+</tr>
+</tbody>
+</table>
+<p>(2) 关于 <code>rewrite</code></p>
+<p>前面提到,AOF是将每条写入命令都同步到硬盘,包括删除key的指令,一直这么下去,AOF文件将会变的非常庞大,甚至占用所有硬盘空间。</p>
+<p><code>rewrite</code> 就是解决这个问题的,它对应的命令是 <code>BGREWRITEAOF</code> , 这个命令和 <code>BGSAVE</code> 非常相似,都是由Redis父进程fork的子进程去执行操作,所以它和 <code>BGSAVE</code> 有相同的缺点。<br><code>BGREWRITEAOF</code> 会通过移除AOF中冗余命令的方式来重写AOF文件,重写之后体积就会变小很多。</p>
+<p><code>auto-aof-rewrite-percentage</code> 和 <code>auto-aof-rewrite-min-size</code> 这两项配置是配置自动重写AOF文件的触发条件,只有在设置了 <code>appendonly yes</code> 的情况下,也就是开启了AOF持久化机制才会生效。<br>举个例子,<code>auto-aof-rewrite-percentage 100</code>,  <code>auto-aof-rewrite-min-size 64mb</code> 表示,当AOF大于 <code>64mb</code> 并且比上一次重写之后的体积大了<code>100%</code> 才会执行<code>BGREWRITEAOF</code>。可以通过修改这两项参数来控制AOF重写的频率。</p>
+<p>(3) 关于 <code>aof-load-truncated</code></p>
+<p>在写入AOF文件的过程中,可能会由于各种原因(停电,磁盘空间占满,服务器故障导致Redis宕机)导致AOF写入命令被截断,如果该配置项设置为 <code>yes</code> , Redis将会在重启时,清除被截断的命令之后的所有命令(通常情况下后面也没有命令了),然后正常重启。如果不想这样,可以将此项设置为 <code>no</code> ,Redis将会在重启时抛出错误并退出。<strong>需要注意的是</strong>:最新版本中即使设置了 <code>no</code> , Redis也会将被截断的命令之后所有命令删除,以保证下次重新启动时能够正常启动,老版本中则不会,需要使用 <code>redis-check-aof</code> 工具来修复,具体命令是<code>redis-check-aof --fix</code></p>
+<p>以下是<code>aof-load-truncated yes</code>的情况下,Redis重启时发现了AOF被截断,打出的日志</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">* Reading RDB preamble from AOF file...</span><br><span class="line">* Reading the remaining AOF tail...</span><br><span class="line"># !!! Warning: short read while loading the AOF file !!!</span><br><span class="line"># !!! Truncating the AOF at offset 439 !!!</span><br><span class="line"># AOF loaded anyway because aof-load-truncated is enabled</span><br></pre></td></tr></table></figure>
+<p>(4) 关于 <code>aof-use-rdb-preamble</code></p>
+<p>Redis4.0以后，支持AOF和RDB混合使用,可以通过此项进行配置是否开启。</p>
+<h3 id="AOF-详解"><a href="#AOF-详解" class="headerlink" title="AOF 详解"></a>AOF 详解</h3><p>AOF机制对每条写入命令作为日志，以append-only的模式写入一个日志文件中，在redis重启的时候，可以通过回放AOF日志中的写入指令来重新构建整个数据集。<br>Redis并不会将数据直接写入硬盘中,而是会先将数据写进<code>linux os cache</code>,然后在通过配置的<code>appendfsync</code> 设置的时间来执行<code>fsync</code>操作，强行将数据刷入磁盘文件。<br>AOF是存放每条的写命令,所以会不断扩大,当大到一定程度,AOF做<code>rewrite</code>操作,就会基于当时redis内存中的数据,来重新构造一个更小的AOF文件,然后将旧的文件删掉。</p>
+<h3 id="AOF-优点"><a href="#AOF-优点" class="headerlink" title="AOF 优点"></a>AOF 优点</h3><ul>
+<li>AOF可以更好的保护数据不丢失,一般AOF每隔一秒,通过后台线程执行一次fsync,最多丢失1s的数据。可以通过设置改为每次写入数据时都执行fsync，不过这非常影响性能。</li>
+<li>AOF日志仅仅时附加日志，如果因为某些原因导致只写入一般，也可以通过<code>redis-check-aof</code> 轻松修复。</li>
+<li>AOF日志文件过大时,会在后台执行rewrite操作,不会影响客户端的读写</li>
+<li>AOF日志文件可能性好，因为记录的时一条一条的指令。</li>
+</ul>
+<h3 id="AOF-缺点"><a href="#AOF-缺点" class="headerlink" title="AOF 缺点"></a>AOF 缺点</h3><ul>
+<li>AOF日志通常比RDB数据快照文件更大</li>
+<li>做数据恢复的时候可能会比RDB慢</li>
+<li>做定期的冷备没有RDB方便</li>
+</ul>
+<h2 id="RDB和AOF文件损坏了"><a href="#RDB和AOF文件损坏了" class="headerlink" title="RDB和AOF文件损坏了"></a>RDB和AOF文件损坏了</h2><p>Redis为我们提供了工具,<code>redis-check-rdb</code> 和 <code>redis-check-aof</code></p>
+<p>具体使用方法如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ ~]# redis-check-aof</span><br><span class="line">Usage: redis-check-aof [--fix] &lt;file.aof&gt;</span><br><span class="line">[root@iZnom30el3gvhxZ ~]# redis-check-rdb</span><br><span class="line">Usage: redis-check-rdb &lt;rdb-file-name&gt;</span><br></pre></td></tr></table></figure>
+<p>下面是官方文档中对于AOF文件损坏的一些说明，我摘了过来:</p>
+<blockquote>
+<p>If the AOF file is not just truncated, but corrupted with invalid byte sequences in the middle, things are more complex. Redis will complain at startup and will abort:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt;* Reading the remaining AOF tail...</span><br><span class="line">&gt;# Bad file format reading the append only file: make a backup of your AOF file, then use ./redis-check-aof --fix &lt;filename&gt;</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<blockquote>
+<p>The best thing to do is to run the <code>redis-check-aof</code> utility, initially without the <code>--fix</code> option, then understand the problem, jump at the given offset in the file, and see if it is possible to manually repair the file: the AOF uses the same format of the Redis protocol and is quite simple to fix manually. Otherwise it is possible to let the utility fix the file for us, but in that case all the AOF portion from the invalid part to the end of the file may be discareded, leading to a massive amount of data lost if the corruption happen to be in the initial part of the file.</p>
+<h3 id="How-it-works"><a href="#How-it-works" class="headerlink" title="How it works"></a>How it works</h3><p>Log rewriting uses the same copy-on-write trick already in use for snapshotting. This is how it works:</p>
+<ul>
+<li>Redis <a href="http://linux.die.net/man/2/fork" target="_blank" rel="noopener">forks</a>, so now we have a child and a parent process.</li>
+<li>The child starts writing the new AOF in a temporary file.</li>
+<li>The parent accumulates all the new changes in an in-memory buffer (but at the same time it writes the new changes in the old append-only file, so if the rewriting fails, we are safe).</li>
+<li>When the child is done rewriting the file, the parent gets a signal, and appends the in-memory buffer at the end of the file generated by the child.</li>
+<li>Profit! Now Redis atomically renames the old file into the new one, and starts appending new data into the new file.</li>
+</ul>
+<h3 id="How-I-can-switch-to-AOF-if-I’m-currently-using-dump-rdb-snapshots"><a href="#How-I-can-switch-to-AOF-if-I’m-currently-using-dump-rdb-snapshots" class="headerlink" title="How I can switch to AOF, if I’m currently using dump.rdb snapshots?"></a>How I can switch to AOF, if I’m currently using dump.rdb snapshots?</h3><p>There is a different procedure to do this in Redis 2.0 and Redis 2.2, as you can guess it’s simpler in Redis 2.2 and does not require a restart at all.</p>
+<p><strong>Redis &gt;= 2.2</strong></p>
+<ul>
+<li>Make a backup of your latest dump.rdb file.</li>
+<li>Transfer this backup into a safe place.</li>
+<li>Issue the following two commands:</li>
+<li>redis-cli config set appendonly yes</li>
+<li>redis-cli config set save “”</li>
+<li>Make sure that your database contains the same number of keys it contained.</li>
+<li>Make sure that writes are appended to the append only file correctly.</li>
+</ul>
+<p>The first CONFIG command enables the Append Only File. In order to do so <strong>Redis will block</strong> to generate the initial dump, then will open the file for writing, and will start appending all the next write queries.</p>
+<p>The second CONFIG command is used to turn off snapshotting persistence. This is optional, if you wish you can take both the persistence methods enabled.</p>
+<p><strong>IMPORTANT:</strong> remember to edit your redis.conf to turn on the AOF, otherwise when you restart the server the configuration changes will be lost and the server will start again with the old configuration.</p>
+<p><strong>Redis 2.0</strong></p>
+<ul>
+<li>Make a backup of your latest dump.rdb file.</li>
+<li>Transfer this backup into a safe place.</li>
+<li>Stop all the writes against the database!</li>
+<li>Issue a redis-cli bgrewriteaof. This will create the append only file.</li>
+<li>Stop the server when Redis finished generating the AOF dump.</li>
+<li>Edit redis.conf end enable append only file persistence.</li>
+<li>Restart the server.</li>
+<li>Make sure that your database contains the same number of keys it contained.</li>
+<li>Make sure that writes are appended to the append only file correctly.</li>
+</ul>
+</blockquote>
+<h2 id="RDB和AOF如何选择"><a href="#RDB和AOF如何选择" class="headerlink" title="RDB和AOF如何选择?"></a>RDB和AOF如何选择?</h2><p>通过以上内容,应该已经对RDB和AOF两种方式的优缺点有了大概的了解,具体如何选择,还需根据自己的业务情况来选择,这里给出的意见是两种一起用,条件允许的话,将持久化的文件时常备份到多台不同的服务器上。</p>
+<p>Redis4.0以后，支持AOF和RDB混合使用,在 <code>redis.conf</code> 中通过 <code>aof-use-rdb-preamble yes</code> 设置。</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>以下是Redis官方文档中关于 <strong>数据备份</strong> 和 <strong>灾难恢复</strong> 的说明,我做了一下翻译,官方给出的方案已经很完善了,可以参考以下,结合自己的实际情况实施</p>
+<h3 id="数据备份"><a href="#数据备份" class="headerlink" title="数据备份"></a>数据备份</h3><blockquote>
+<p>在开始本节之前,确保读了以下句子：<strong>对你的数据库做备份</strong>。磁盘损坏,云实例消失等等:没有备份意味着将数据丢失到 /dev/null</p>
+<p>Redis对于数据备份非常友好,因为你可以在数据库运行时拷贝RDB文件: RDB文件一旦生成就不会改变,它在生成时使用一个临时的名字,当新的快照文件完成之后会以原子的方式 <code>rename</code> 确保替换掉旧的快照文件。</p>
+<p>这意味着当数据库正在运行时拷贝RDB文件是安全的。下面是我们的建议:</p>
+<ul>
+<li>在服务器中创建一个 <code>cron</code> 作业,在一个文件夹中每隔一个小时创建一次快照的副本,在另一个文件夹中每隔一天创建一次快照的副本。</li>
+<li>每次运行 <code>cron</code> 作业的脚本时,确保调用一次 <code>find</code> 命令来确保删除太旧的快照副本: 例如,你可以保留最近48小时的每小时快照副本和一两个月内的每日快照副本。确保使用数据和时间信息命名快照副本。</li>
+<li>每天至少一次把这些RDB快照备份到 <strong>数据中心之外</strong> 或者 至少是运行着Redis实例的<strong>物理机</strong>之外。</li>
+</ul>
+<p>如果Redis只开启了AOF的持久化模式,也仍然可以创建AOF文件的备份。该文件可能缺少最后部分,但是Redis仍然可以加载它(参考AOF文件被截断相关内容)。</p>
+</blockquote>
+<h3 id="灾难恢复"><a href="#灾难恢复" class="headerlink" title="灾难恢复"></a>灾难恢复</h3><blockquote>
+<p>Redis的灾难恢复和备份基本相同,而且可以传输到许多不同的数据中心。以这种方式保护数据,即使在正运行着Redis的实例的主数据中心发生了灾难性事件,这些备份的数据也很安全。</p>
+<p>由于许多Redis用户正处于起始阶段,可能没有足够的资金去执行上述方案。我们将介绍最有趣的灾难恢复方案,这些技术成本不会很高。</p>
+<ul>
+<li>亚马逊S3和其他云是实现你的灾难恢复系统的一个好方案。用加密的方式把你的每日和每小时的数据快照传输到S3。你可以用<code>gpg -c</code>(对称加密)加密你的数据。保证把你的密码保存在其他安全的地方(比如给你的组织中最重要的人一个副本)。推荐你使用多个数据存储服务来提升你的数据安全性。</li>
+<li>用SCP(SSH的一部分)将你的快照传到其他远程服务器。这是一个相当简单和安全的方式: 在离你很远的地方获取一个VPS,在那里安装SSH,并生成一个没有密码的ssh客户端,然后把它添加到VPS的 <code>authorized_keys</code> 文件中。你已经准备好了以自动的方式传输这些备份文件。至少从两个不同的VPS提供商获取VPS,以保证最好的结果。</li>
+</ul>
+<p>最重要的是理解,如果你没有以正确的方式去实现上述方案。至少绝对确保在传输完成之后检查文件的大小(它应该要和你复制的文件大小一致),如果你使用VPS的话,还要验证SHA1摘要。</p>
+<p>如果备份在传输过程中由于某些原因失败了,你也需要一套独立的警报系统。</p>
+</blockquote>
+<hr>
+<p>更多详细内容参考:</p>
+<p><a href="https://redis.io/topics/persistence" target="_blank" rel="noopener">Redis持久化官方文档</a></p>
+<p><a href="http://redisinaction.com/" target="_blank" rel="noopener">Redis实战</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-4-persistence/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Redis/">
+              #Redis
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/redis-3-ex-evict /" target="_self">Redis从入门到精通(三、Redis的过期策略和内存淘汰机制)</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/redis-5-transaction/" target="_self">Redis从入门到精通(五、Redis的事务)</a>
+        <i class="iconfont icon-next"></i>
+      </div>
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>

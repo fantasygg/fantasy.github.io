@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="董沅鑫, yuanxin.me@gmail.com">
+  
+  
+  
+  <title>Redis从入门到精通(八、Redis 集群) | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Redis从入门到精通,Redis,">
+  
+
+  <script>
+    console.log('\n%c Hexo-theme-bmw v4.0 ' + '%c 🎉 https://github.com/dongyuanxin/theme-bmw 🎉\n' + '\n%c View demo online ' + '%c 🔍 https://godbmw.com/ 🔍  \n' , 'color: #fadfa3; background: #030307; padding:3px 0;', '', 'color: #fadfa3; background: #030307; padding:3px 0;', '');
+  </script>
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/fantasygg">
+          
+            <a href="https://github.com/fantasygg" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Redis从入门到精通(八、Redis 集群)</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-05-14
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Redis从入门到精通/">
+            Redis从入门到精通
+          </a>
+      </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h3 id="Redis集群中的基本概念"><a href="#Redis集群中的基本概念" class="headerlink" title="Redis集群中的基本概念"></a>Redis集群中的基本概念</h3><p>Redis的集群模式提供了数据的分片功能,并能保证每个分片上的可用性。Redis集群每个节点需要打开2个TCP连接,一个为客户端提供服务,如 <code>6379</code>,另一个端口在第一个端口上 <code>+10000</code>,为 <code>16379</code>。用于集群总线,节点使用集群总线进行故障检测,配置更新,故障转移授权等。客户端不应尝试与集群总线接口进行连接。必须打开这两个端口,集群才能正常工作。(两个端口的偏移量始终是 <code>10000</code>)</p>
+<h4 id="集群中的数据分片"><a href="#集群中的数据分片" class="headerlink" title="集群中的数据分片"></a>集群中的数据分片</h4><p>Redis Cluster 不使用一致性Hash,它使用的是另一种方式:hash slot(哈希槽)。</p>
+<p>Redis集群中共有16384个Hash槽,采用了 <code>CRC 16 &amp; 16384</code> 计算出hash槽的值。Redis集群的每个节点负责一部分hash槽,例如:3个节点,其中A节点(0-5500),B节点(5501-11000),C节点(11001-16383).</p>
+<p>在添加或这删除节点时,只需要将节点上的部分槽移动到新节点上即可,例如,需要添加一个新节点D,将A,B,C上部分的槽移动到D上即可。删除节点同理,例如需要删除A,只需要将A上的槽移动到B,C上。</p>
+<h4 id="集群中的主从模型"><a href="#集群中的主从模型" class="headerlink" title="集群中的主从模型"></a>集群中的主从模型</h4><p>为了保证集群中每个节点的可用性,cluster使用了主从模型。例如,三主三从的架构中：A,B,C,A1,B1,C1 ,A和A1为主从复制,A节点出现故障,集群将A1升为主节点,保证了集群的可用性,如果A1也出现故障,集群将不可用。</p>
+<h4 id="集群一致性保证"><a href="#集群一致性保证" class="headerlink" title="集群一致性保证"></a>集群一致性保证</h4><p>Redis Cluster 无法保证数据的强一致性。Redis的异步复制是导致无法保证数据一致的第一个原因: 客户端向A写入数据 –&gt; A向客户端回复 –&gt; A将数据扩散至从节点A1,A2,A3,可能在扩散的过程中出现了故障,导致数据数据丢失。可以将复制扩散设置为同步,全部写入后再向客户端返回,但是这样就导致性能过低。</p>
+<p>网络发生分区时,客户端与少数实例隔离,也可能出现数据丢失的情况, A,A1,B,B1,C,C1,Client, client 正在向C中写入数据,出现了网络分区,导致 client 和 C 被隔离,集群选举C1成为新的主节点,网络恢复后,C中的数据将会丢失,这种情况以通过设置 <code>node timeout</code> 来控制数据丢失的情况。节点超时过后，主节点被视为失败，可以由其中一个副本替换。类似地，在节点超时已经过去而主节点无法感知大多数其他主节点之后，它进入错误状态并停止接受写入。</p>
+<p>Redis 集群的一致性,基本上要在性能和y一致性之间做一个平衡。</p>
+<hr>
+<h3 id="Redis-集群配置"><a href="#Redis-集群配置" class="headerlink" title="Redis 集群配置"></a>Redis 集群配置</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cluster-enabled &lt;yes/no&gt;</span><br><span class="line">cluster-config-file &lt;filename&gt;</span><br><span class="line">cluster-node-timeout &lt;milliseconds&gt;</span><br><span class="line">cluster-slave-validity-factor &lt;factor&gt;</span><br><span class="line">cluster-migration-barrier &lt;count&gt;</span><br><span class="line">cluster-require-full-coverage &lt;yes/no&gt;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>cluster-enabled &lt;yes/no&gt;</code> ,是否开启集群模式,默认不开启</li>
+<li><code>cluster-config-file &lt;filename&gt;</code> ,开启集群后,Redis集群会在每次发生更改时的配置写入到文件中,在重新启动时,使用这个配置文件。这个文件一般不去认为的改动。</li>
+<li><code>cluster-node-timeout &lt;milliseconds&gt;</code>,节点超时时长,如果节点无法访问超过这个时间,从节点将会进行故障转移。</li>
+<li><code>cluster-slave-validity-factor &lt;factor&gt;</code>,如果设置为零，则从站将始终尝试对主站进行故障切换，而不管主站和从站之间的链路是否保持断开连接的时间长短。如果该值为正，则计算最大断开时间作为节点超时值乘以此选项提供的因子，如果节点是从属节点，则如果主链接断开连接的时间超过指定的时间，则不会尝试启动故障转移。例如，如果节点超时设置为5秒，并且有效性因子设置为10，则从主设备断开超过50秒的从设备将不会尝试故障转移其主设备。请注意，如果没有从站能够对其进行故障转移，则任何不同于零的值都可能导致Redis群集在主站发生故障后不可用。在这种情况下，只有当原始主服务器重新加入群集时，群集才会返回。</li>
+<li><code>cluster-migration-barrier &lt;count&gt;</code> ,主服务器将保持连接的最小从服务器数，以便另一个从服务器迁移到不再由任何从服务器覆盖的主服务器。</li>
+<li><code>cluster-require-full-coverage &lt;yes/no&gt;</code>,：如果设置为yes，则默认情况下，如果任何节点未覆盖某个百分比的key space，则集群将停止接受写入。如果该选项设置为no，即使只能处理有关键子集的请求，集群仍将提供查询。</li>
+</ul>
+<hr>
+<h3 id="Redis-Cluster-使用"><a href="#Redis-Cluster-使用" class="headerlink" title="Redis Cluster 使用"></a>Redis Cluster 使用</h3><p>我这里使用的Redis版本为 5.0.3,不同版本可能命令会有些不同。</p>
+<p>首先准备6个Redis节点,条件有限,就在一台服务器上进行,拷贝6份redis.conf,最基本的必须配置有:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">port 7000</span><br><span class="line">cluster-enabled yes</span><br><span class="line">cluster-config-file nodes.conf</span><br><span class="line">cluster-node-timeout 5000</span><br><span class="line">appendonly yes</span><br></pre></td></tr></table></figure>
+<p>6个节点的端口号为: 7000,7001,7002,7003,7004,7005</p>
+<p>分别启动6个节点:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">redis-server redis-1.conf</span><br><span class="line">redis-server redis-2.conf</span><br><span class="line">redis-server redis-3.conf</span><br><span class="line">redis-server redis-4.conf</span><br><span class="line">redis-server redis-5.conf</span><br><span class="line">redis-server redis-6.conf</span><br></pre></td></tr></table></figure>
+<p>现在已经开启了6个节点</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ redis]# ps -ef | grep redis</span><br><span class="line">root     16270     1  0 15:15 ?        00:00:09 redis-server *:7000 [cluster]</span><br><span class="line">root     16277     1  0 15:15 ?        00:00:09 redis-server *:7001 [cluster]</span><br><span class="line">root     16534     1  0 15:20 ?        00:00:08 redis-server *:7003 [cluster]</span><br><span class="line">root     16541     1  0 15:20 ?        00:00:08 redis-server *:7004 [cluster]</span><br><span class="line">root     16548     1  0 15:20 ?        00:00:08 redis-server *:7005 [cluster]</span><br><span class="line">root     17158     1  0 15:33 ?        00:00:08 redis-server *:7002 [cluster]</span><br><span class="line">root     22290 13798  0 17:17 pts/0    00:00:00 grep --color=auto redis</span><br></pre></td></tr></table></figure>
+<h4 id="开启集群模式"><a href="#开启集群模式" class="headerlink" title="开启集群模式"></a>开启集群模式</h4><p>使用下述命令创建Redis Cluster：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 节点没有设置密码</span><br><span class="line">redis-cli --cluster create 127.0.0.1:7000  127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 --cluster-replicas 1</span><br><span class="line"></span><br><span class="line"># 节点设置了密码</span><br><span class="line">redis-cli --cluster create 127.0.0.1:7000  127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 --cluster-replicas 1 -a &lt;requirepass&gt;</span><br></pre></td></tr></table></figure>
+<p>其中 <code>--cluster-replicas 1</code>,表示每个节点有一个从节点</p>
+<p>需要注意的是:如果要给实例设置密码,最好所有节点的密码设置一致,并且配置 <code>masterauth</code> ,否则切换故障转移的时候可能会出错。也可以在开启集群时不设置密码,开启后在通过 <code>config set masterauth abc config set requirepass abc config rewrite</code> 命令设置。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli --cluster create 127.0.0.1:7000  127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 --cluster-replicas 1 -a abc</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">&gt;&gt;&gt; Performing hash slots allocation on 6 nodes...</span><br><span class="line">Master[0] -&gt; Slots 0 - 5460</span><br><span class="line">Master[1] -&gt; Slots 5461 - 10922</span><br><span class="line">Master[2] -&gt; Slots 10923 - 16383</span><br><span class="line">Adding replica 127.0.0.1:7003 to 127.0.0.1:7000</span><br><span class="line">Adding replica 127.0.0.1:7004 to 127.0.0.1:7001</span><br><span class="line">Adding replica 127.0.0.1:7005 to 127.0.0.1:7002</span><br><span class="line">&gt;&gt;&gt; Trying to optimize slaves allocation for anti-affinity</span><br><span class="line">[WARNING] Some slaves are in the same host as their master</span><br><span class="line">M: 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000</span><br><span class="line">   slots:[0-5460] (5461 slots) master</span><br><span class="line">M: 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001</span><br><span class="line">   slots:[5461-10922] (5462 slots) master</span><br><span class="line">M: 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002</span><br><span class="line">   slots:[10923-16383] (5461 slots) master</span><br><span class="line">S: 3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003</span><br><span class="line">   replicates 07bc00f5b816a612e96ad2fcdc25b4decdc498bd</span><br><span class="line">S: 1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004</span><br><span class="line">   replicates 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0</span><br><span class="line">S: 08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005</span><br><span class="line">   replicates 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea</span><br><span class="line">Can I set the above configuration? (type &apos;yes&apos; to accept): yes</span><br><span class="line">&gt;&gt;&gt; Nodes configuration updated</span><br><span class="line">&gt;&gt;&gt; Assign a different config epoch to each node</span><br><span class="line">&gt;&gt;&gt; Sending CLUSTER MEET messages to join the cluster</span><br><span class="line">Waiting for the cluster to join</span><br><span class="line">...</span><br><span class="line">&gt;&gt;&gt; Performing Cluster Check (using node 127.0.0.1:7000)</span><br><span class="line">M: 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000</span><br><span class="line">   slots:[0-5460] (5461 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">M: 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002</span><br><span class="line">   slots:[10923-16383] (5461 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">S: 08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea</span><br><span class="line">S: 3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 07bc00f5b816a612e96ad2fcdc25b4decdc498bd</span><br><span class="line">S: 1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0</span><br><span class="line">M: 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001</span><br><span class="line">   slots:[5461-10922] (5462 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check for open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br></pre></td></tr></table></figure>
+<p>输入命令后,会向你确认信息,输入<code>yes</code> ,最后输出 <code>[OK] All 16384 slots covered.</code> 即为集群创建成功。</p>
+<p>Redis 5.0 版本之后也提供了 <code>create-cluster</code> 在 <code>utils/create-cluster</code> 也可以用这个来做集群的启动,关闭等操作。</p>
+<p>使用 <code>redis-cli</code> 进入一个节点 :</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli -c -p 7000 -a abc</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">127.0.0.1:7000&gt;</span><br></pre></td></tr></table></figure>
+<p><code>-c</code> 为以集群模式进入,加不加这个参数的影响稍微演示,先向redis中存一个 key看看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:7000&gt; set foo bar</span><br><span class="line">-&gt; Redirected to slot [12182] located at 127.0.0.1:7002</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:7002&gt;</span><br></pre></td></tr></table></figure>
+<p>可以看到 <code>foo</code> 计算出的hash slot为 <code>12182</code> ,在第三个节点中,被存入到7002节点中</p>
+<p>再来看一下如果不加 <code>-c</code> 是什么效果:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli -p 7000 -a abc</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">127.0.0.1:7000&gt; get foo</span><br><span class="line">(error) MOVED 12182 127.0.0.1:7002</span><br><span class="line">127.0.0.1:7000&gt;</span><br></pre></td></tr></table></figure>
+<p>可以看到,抛出了一个错误 <code>(error) MOVED 12182 127.0.0.1:7002</code> , 其实以集群模式进入redis-cli,也会出现这个错误,只是客户端隐藏了这个错误,并重新在7002节点上重新执行了这个操作。</p>
+<p>在redis-cli中可以通过 <code>cluster info</code> 查看集群状态:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:7000&gt; CLUSTER INFO</span><br><span class="line">cluster_state:ok</span><br><span class="line">cluster_slots_assigned:16384</span><br><span class="line">cluster_slots_ok:16384</span><br><span class="line">cluster_slots_pfail:0</span><br><span class="line">cluster_slots_fail:0</span><br><span class="line">cluster_known_nodes:6</span><br><span class="line">cluster_size:3</span><br><span class="line">cluster_current_epoch:6</span><br><span class="line">cluster_my_epoch:1</span><br><span class="line">cluster_stats_messages_ping_sent:1001</span><br><span class="line">cluster_stats_messages_pong_sent:987</span><br><span class="line">cluster_stats_messages_sent:1988</span><br><span class="line">cluster_stats_messages_ping_received:982</span><br><span class="line">cluster_stats_messages_pong_received:1001</span><br><span class="line">cluster_stats_messages_meet_received:5</span><br><span class="line">cluster_stats_messages_received:1988</span><br></pre></td></tr></table></figure>
+<p>cluster_state:ok 代表集群正常</p>
+<h4 id="测试故障转移"><a href="#测试故障转移" class="headerlink" title="测试故障转移"></a>测试故障转移</h4><p><code>cluster nodes</code> 查看集群中节点:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:7000&gt; CLUSTER NODES</span><br><span class="line">4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000@17000 myself,master - 0 1557916585000 1 connected 0-5460</span><br><span class="line">3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002@17002 master - 0 1557916585000 3 connected 10923-16383</span><br><span class="line">08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005@17005 slave 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 0 1557916584562 6 connected</span><br><span class="line">3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003@17003 slave 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 0 1557916585565 4 connected</span><br><span class="line">1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004@17004 slave 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 0 1557916585966 5 connected</span><br><span class="line">07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001@17001 master - 0 1557916585000 2 connected 5461-10922</span><br></pre></td></tr></table></figure>
+<p>关闭其中一个主节点,模拟出现故障的场景,这里关闭7000：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ ~]# redis-cli -a abc -p 7000 shutdown</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">[root@iZnom30el3gvhxZ ~]# redis-cli -c -p 7001 -a abc</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">127.0.0.1:7001&gt; CLUSTER NODES</span><br><span class="line">3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002@17002 master - 0 1557972888691 3 connected 10923-16383</span><br><span class="line">1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004@17004 slave 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 0 1557972889594 5 connected</span><br><span class="line">07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001@17001 myself,master - 0 1557972888000 2 connected 5461-10922</span><br><span class="line">4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000@17000 master,fail - 1557972867020 1557972866000 1 disconnected</span><br><span class="line">08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005@17005 master - 0 1557972888188 7 connected 0-5460</span><br><span class="line">3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003@17003 slave 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 0 1557972889191 4 connected</span><br><span class="line">127.0.0.1:7001&gt;</span><br></pre></td></tr></table></figure>
+<p>可以看到,7000端口当前状态 <code>fail</code> , 原来的从节点7005变成了主节点。</p>
+<p>再重新启动7000节点:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ ~]# cd /usr/local/redis/cluster/</span><br><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-server cluster1/redis.conf</span><br><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli -c -p 7000 -a abc</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">127.0.0.1:7000&gt; CLUSTER NODES</span><br><span class="line">1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004@17004 slave 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 0 1557973018558 5 connected</span><br><span class="line">3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003@17003 slave 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 0 1557973017957 4 connected</span><br><span class="line">07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001@17001 master - 0 1557973018000 2 connected 5461-10922</span><br><span class="line">4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000@17000 myself,slave 08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 0 1557973018000 1 connected</span><br><span class="line">3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002@17002 master - 0 1557973017556 3 connected 10923-16383</span><br><span class="line">08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005@17005 master - 0 1557973016553 7 connected 0-5460</span><br><span class="line">127.0.0.1:7000&gt;</span><br></pre></td></tr></table></figure>
+<p>7000节点重新启动后变成了从节点。</p>
+<h4 id="手动故障转移"><a href="#手动故障转移" class="headerlink" title="手动故障转移"></a>手动故障转移</h4><p>Redis Cluster 提供了手动执行故障转移的功能,有时候我们需要对集群中的某个几点进行维护升级等情况可能需要用到,具体指令为 <code>CLUSTER FAILOVER</code>,需要在想要被提升为主节点的从节点上执行</p>
+<p>例如,<code>7000</code> 节点为 <code>7005</code> 节点的从节点,现在想对 <code>7005</code> 节点进行下线维护, 就需要将 <code>7000</code> 提升为主节点,保持对外服务器的可用性,需要在 <code>7000</code> 节点的客户端中执行命令:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli -c -p 7000 -a abc</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">127.0.0.1:7000&gt; CLUSTER FAILOVER</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:7000&gt; CLUSTER NODES</span><br><span class="line">1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004@17004 slave 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 0 1557973168583 5 connected</span><br><span class="line">3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003@17003 slave 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 0 1557973167380 4 connected</span><br><span class="line">07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001@17001 master - 0 1557973168884 2 connected 5461-10922</span><br><span class="line">4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000@17000 myself,master - 0 1557973168000 8 connected 0-5460</span><br><span class="line">3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002@17002 master - 0 1557973168583 3 connected 10923-16383</span><br><span class="line">08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005@17005 slave 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 0 1557973169385 8 connected</span><br><span class="line">127.0.0.1:7000&gt;</span><br></pre></td></tr></table></figure>
+<p>7005节点已经变为了从节点,可以将7005节点下线。</p>
+<p>手动故障转移时客户端的切换是在确保新的主节点完全复制了失败的旧的主节点数据的前提下发生的，避免了数据的丢失。</p>
+<h4 id="添加节点"><a href="#添加节点" class="headerlink" title="添加节点"></a>添加节点</h4><p>首先需要再新准备一个新的redis实例作为要添加的节点,如下,7006为新启动的节点</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# ps -ef | grep redis</span><br><span class="line">root      8522     1  0 10:16 ?        00:00:25 redis-server *:7000 [cluster]</span><br><span class="line">root     18060     1  0 13:28 ?        00:00:00 redis-server *:7006 [cluster]</span><br><span class="line">root     18066  7831  0 13:28 pts/0    00:00:00 grep --color=auto redis</span><br><span class="line">root     26183     1  0 May15 ?        00:01:34 redis-server *:7001 [cluster]</span><br><span class="line">root     26190     1  0 May15 ?        00:01:35 redis-server *:7002 [cluster]</span><br><span class="line">root     26202     1  0 May15 ?        00:01:26 redis-server *:7003 [cluster]</span><br><span class="line">root     26208     1  0 May15 ?        00:01:26 redis-server *:7004 [cluster]</span><br><span class="line">root     26215     1  0 May15 ?        00:01:27 redis-server *:7005 [cluster]</span><br></pre></td></tr></table></figure>
+<p>添加节点的命令是 <code>redis-cli --cluster add-node 127.0.0.1:7006 127.0.0.1:7000</code> , add-node 后第一个参数为新添加节点的ip,第二个为集群中任意一个节点的ip</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli --cluster add-node 127.0.0.1:7006 127.0.0.1:7000 -a wk123456</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">&gt;&gt;&gt; Adding node 127.0.0.1:7006 to cluster 127.0.0.1:7000</span><br><span class="line">&gt;&gt;&gt; Performing Cluster Check (using node 127.0.0.1:7000)</span><br><span class="line">M: 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000</span><br><span class="line">   slots:[8461-16383] (7923 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">S: 1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0</span><br><span class="line">S: 3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea</span><br><span class="line">M: 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001</span><br><span class="line">   slots:[0-5460] (5461 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">M: 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002</span><br><span class="line">   slots:[5461-8460] (3000 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">S: 08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 07bc00f5b816a612e96ad2fcdc25b4decdc498bd</span><br><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check for open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br><span class="line">&gt;&gt;&gt; Send CLUSTER MEET to node 127.0.0.1:7006 to make it join the cluster.</span><br><span class="line">[OK] New node added correctly.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">127.0.0.1:7006&gt; CLUSTER NODES</span><br><span class="line">1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004@17004 slave 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 0 1557985157416 12 connected</span><br><span class="line">08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005@17005 slave 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 0 1557985159418 11 connected</span><br><span class="line">4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000@17000 master - 0 1557985158417 10 connected 8461-16383</span><br><span class="line">07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001@17001 master - 0 1557985158000 11 connected 0-5460</span><br><span class="line">3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002@17002 master - 0 1557985158517 12 connected 5461-8460</span><br><span class="line">3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003@17003 slave 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 0 1557985158000 10 connected</span><br><span class="line">3425f765692f0b8b9c4931c038fae8d86fe6e383 127.0.0.1:7006@17006 myself,master - 0 1557985158000 0 connected</span><br></pre></td></tr></table></figure>
+<p>执行完 <code>redis-cli --cluster add-node 127.0.0.1:7006 127.0.0.1:7000 -a abc</code> 命令后,输出  <code>[OK] New node added correctly.</code> ,即添加新节点成功,在 <code>redis-cli</code> 中,查看节点,已经被添加进去,只是7006 上没有分配hash slot,现在我们需要将其它节点上的hash slot 分配给7006节点一些(使用 reshard 命令),这里演示的是将7000节点上的节点分出4000个到7006节点上:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli --cluster reshard 127.0.0.1:7000 -a wk123456</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">&gt;&gt;&gt; Performing Cluster Check (using node 127.0.0.1:7000)</span><br><span class="line">M: 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000</span><br><span class="line">   slots:[8461-16383] (7923 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">S: 1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0</span><br><span class="line">S: 3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea</span><br><span class="line">M: 3425f765692f0b8b9c4931c038fae8d86fe6e383 127.0.0.1:7006</span><br><span class="line">   slots: (0 slots) master</span><br><span class="line">M: 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001</span><br><span class="line">   slots:[0-5460] (5461 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">M: 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002</span><br><span class="line">   slots:[5461-8460] (3000 slots) master</span><br><span class="line">   1 additional replica(s)</span><br><span class="line">S: 08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005</span><br><span class="line">   slots: (0 slots) slave</span><br><span class="line">   replicates 07bc00f5b816a612e96ad2fcdc25b4decdc498bd</span><br><span class="line">[OK] All nodes agree about slots configuration.</span><br><span class="line">&gt;&gt;&gt; Check for open slots...</span><br><span class="line">&gt;&gt;&gt; Check slots coverage...</span><br><span class="line">[OK] All 16384 slots covered.</span><br><span class="line">How many slots do you want to move (from 1 to 16384)?</span><br></pre></td></tr></table></figure>
+<p>这里需要让你输入想要分配的slot数量,我们这里输入 4000,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">How many slots do you want to move (from 1 to 16384)? 4000</span><br><span class="line">What is the receiving node ID?</span><br></pre></td></tr></table></figure>
+<p>这里需要输入接收这些slot的节点,输入上述打出来的目标节点的ID即可,这里输入 <code>3425f765692f0b8b9c4931c038fae8d86fe6e383</code>,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">How many slots do you want to move (from 1 to 16384)? 4000</span><br><span class="line">What is the receiving node ID? 3425f765692f0b8b9c4931c038fae8d86fe6e383</span><br><span class="line">Please enter all the source node IDs.</span><br><span class="line">  Type &apos;all&apos; to use all the nodes as source nodes for the hash slots.</span><br><span class="line">  Type &apos;done&apos; once you entered all the source nodes IDs.</span><br><span class="line">Source node #1:</span><br></pre></td></tr></table></figure>
+<p>这里输入源节点的id，如果是所有的节点,直接输入 <code>all</code> 即可,如果是一个或者多个节点,可以一个一个的输入,最后输入 <code>done</code>,我们这里只需要将 7000节点的上的分出来一些就行,</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">How many slots do you want to move (from 1 to 16384)? 4000</span><br><span class="line">What is the receiving node ID? 3425f765692f0b8b9c4931c038fae8d86fe6e383</span><br><span class="line">Please enter all the source node IDs.</span><br><span class="line">  Type &apos;all&apos; to use all the nodes as source nodes for the hash slots.</span><br><span class="line">  Type &apos;done&apos; once you entered all the source nodes IDs.</span><br><span class="line">Source node #1: 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea</span><br><span class="line">Source node #2: done</span><br></pre></td></tr></table></figure>
+<p>还会再向你确认一遍,无误后输入 <code>yes</code> 等待分配完成即可。</p>
+<p>进入 <code>redis-cli</code> 中查看节点:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:7006&gt; CLUSTER NODES</span><br><span class="line">1793ee70d256fc3ab7ab582b20a9da0c8884e683 127.0.0.1:7004@17004 slave 3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 0 1557985824187 12 connected</span><br><span class="line">08aa7f83a0e69d441f523a5b2758cf42d7b1fe6d 127.0.0.1:7005@17005 slave 07bc00f5b816a612e96ad2fcdc25b4decdc498bd 0 1557985823000 11 connected</span><br><span class="line">4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 127.0.0.1:7000@17000 master - 0 1557985823085 10 connected 12461-16383</span><br><span class="line">07bc00f5b816a612e96ad2fcdc25b4decdc498bd 127.0.0.1:7001@17001 master - 0 1557985823185 11 connected 0-5460</span><br><span class="line">3dc5d7b70542e56f85b0ce74190b4d37e540cdc0 127.0.0.1:7002@17002 master - 0 1557985824586 12 connected 5461-8460</span><br><span class="line">3a5b137a1997d72cdd61fb4cf58de6530a78fbca 127.0.0.1:7003@17003 slave 4c0b7a5b52bf3c4cb61c88f3af7fc73b8db00dea 0 1557985823000 10 connected</span><br><span class="line">3425f765692f0b8b9c4931c038fae8d86fe6e383 127.0.0.1:7006@17006 myself,master - 0 1557985824000 13 connected 8461-12460</span><br></pre></td></tr></table></figure>
+<p>7006上已经有了分配的slot</p>
+<h5 id="添加新节点为从节点"><a href="#添加新节点为从节点" class="headerlink" title="添加新节点为从节点"></a>添加新节点为从节点</h5><p>添加新节点比较简单,这里不做演示,下面贴出主要命令:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 随机指定主服务器</span><br><span class="line">redis-cli --cluster add-node 127.0.0.1:7007 127.0.0.1:7000 --cluster-slave</span><br><span class="line"></span><br><span class="line"># 准确指定主服务器</span><br><span class="line">redis-cli --cluster add-node 127.0.0.1:7007 127.0.0.1:7000 --cluster-slave --cluster-master-id 3425f765692f0b8b9c4931c038fae8d86fe6e383</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">redis 127.0.0.1:7007&gt; cluster replicate 3425f765692f0b8b9c4931c038fae8d86fe6e383</span><br></pre></td></tr></table></figure>
+<h4 id="移除节点"><a href="#移除节点" class="headerlink" title="移除节点"></a>移除节点</h4><p>删除节点的主要命令 <code>redis-cli --cluster del-node 127.0.0.1:7000 &lt;node-id&gt;</code> del-node 后第一个参数为 集群中任意一个节点的ip,第2个参数需要移除的节点的id</p>
+<p>需要注意的是,如果删除主节点的话,需要先将主节点中的slot分配出去,否则无法删除,如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli --cluster del-node 127.0.0.1:7000 3425f765692f0b8b9c4931c038fae8d86fe6e383 -a abc</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">&gt;&gt;&gt; Removing node 3425f765692f0b8b9c4931c038fae8d86fe6e383 from cluster 127.0.0.1:7000</span><br><span class="line">[ERR] Node 127.0.0.1:7006 is not empty! Reshard data away and try again.</span><br></pre></td></tr></table></figure>
+<p>执行一次 <code>reshard</code> 将7006上的slot 分配出去,这里不做演示,直接贴出成功删除节点的回应:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@iZnom30el3gvhxZ cluster]# redis-cli --cluster del-node 127.0.0.1:7000 3425f765692f0b8b9c4931c038fae8d86fe6e383 -a wk123456</span><br><span class="line">Warning: Using a password with &apos;-a&apos; or &apos;-u&apos; option on the command line interface may not be safe.</span><br><span class="line">&gt;&gt;&gt; Removing node 3425f765692f0b8b9c4931c038fae8d86fe6e383 from cluster 127.0.0.1:7000</span><br><span class="line">&gt;&gt;&gt; Sending CLUSTER FORGET messages to the cluster...</span><br><span class="line">&gt;&gt;&gt; SHUTDOWN the node.</span><br><span class="line">[root@iZnom30el3gvhxZ cluster]# ps -ef | grep redis</span><br><span class="line">root      8522     1  0 10:16 ?        00:00:32 redis-server *:7000 [cluster]</span><br><span class="line">root     19854  7831  0 14:04 pts/0    00:00:00 grep --color=auto redis</span><br><span class="line">root     26183     1  0 May15 ?        00:01:40 redis-server *:7001 [cluster]</span><br><span class="line">root     26190     1  0 May15 ?        00:01:40 redis-server *:7002 [cluster]</span><br><span class="line">root     26202     1  0 May15 ?        00:01:29 redis-server *:7003 [cluster]</span><br><span class="line">root     26208     1  0 May15 ?        00:01:28 redis-server *:7004 [cluster]</span><br><span class="line">root     26215     1  0 May15 ?        00:01:29 redis-server *:7005 [cluster]</span><br></pre></td></tr></table></figure>
+<p>7006节点以被移除并且下线了。</p>
+<hr>
+<p>更多详细资料参考:</p>
+<p><a href="https://redis.io/topics/cluster-tutorial" target="_blank" rel="noopener">Redis Cluster 官方文档</a><br><a href="https://redis.io/topics/cluster-spec" target="_blank" rel="noopener">Redis Cluster进阶 官方文档</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-8-cluster/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Redis/">
+              #Redis
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/redis-7-sentinel/" target="_self">Redis从入门到精通(七、Redis Sentinel)</a>
+      </div>
+    
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>

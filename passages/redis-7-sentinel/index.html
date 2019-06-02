@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="董沅鑫, yuanxin.me@gmail.com">
+  
+  
+  
+  <title>Redis从入门到精通(七、Redis Sentinel) | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Redis从入门到精通,Redis,">
+  
+
+  <script>
+    console.log('\n%c Hexo-theme-bmw v4.0 ' + '%c 🎉 https://github.com/dongyuanxin/theme-bmw 🎉\n' + '\n%c View demo online ' + '%c 🔍 https://godbmw.com/ 🔍  \n' , 'color: #fadfa3; background: #030307; padding:3px 0;', '', 'color: #fadfa3; background: #030307; padding:3px 0;', '');
+  </script>
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/fantasygg">
+          
+            <a href="https://github.com/fantasygg" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Redis从入门到精通(七、Redis Sentinel)</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-05-08
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Redis从入门到精通/">
+            Redis从入门到精通
+          </a>
+      </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <p>Sentinel提供了以下功能:</p>
+<ul>
+<li>监控。Sentinel会不断检查主从是否按预期工作。</li>
+<li>通知。Sentinel可以通过API通知系统管理员，另一台计算机程序，其中一个受监控的Redis实例出现问题。</li>
+<li>自动故障转移。如果主服务器未按预期工作，Sentinel可以启动故障转移过程，其中从服务器升级为主服务器，其他其他服务器重新配置为使用新主服务器，并且使用Redis服务器的应用程序通知有关新服务器的地址连接。</li>
+<li>配置提供商。Sentinel充当客户端服务发现的权限来源：客户端连接到Sentinels，以便询问负责给定服务的当前Redis主服务器的地址。如果发生故障转移，Sentinels将报告新地址。</li>
+</ul>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>我挑了一些主要的配置项出来,其它的都与redis.conf类似</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># sentinel announce-ip &lt;ip&gt;</span><br><span class="line"># sentinel announce-port &lt;port&gt;</span><br><span class="line"></span><br><span class="line">sentinel auth-pass mymaster &lt;password&gt;</span><br><span class="line"></span><br><span class="line"># sentinel monitor &lt;master-group-name&gt; &lt;ip&gt; &lt;port&gt; &lt;quorm&gt;</span><br><span class="line">sentinel monitor mymaster 127.0.0.1 6379 2</span><br><span class="line"></span><br><span class="line"># sentinel down-after-milliseconds &lt;master-name&gt; &lt;milliseconds&gt;</span><br><span class="line">sentinel down-after-milliseconds mymaster 30000</span><br><span class="line"></span><br><span class="line"># sentinel parallel-syncs &lt;master-name&gt; &lt;numreplicas&gt;</span><br><span class="line">sentinel parallel-syncs mymaster 1</span><br><span class="line"></span><br><span class="line"># sentinel failover-timeout &lt;master-name&gt; &lt;milliseconds&gt;</span><br><span class="line">sentinel failover-timeout mymaster 180000</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>sentinel auth-pass &lt;master-group-name&gt; &lt;password&gt;</code> ,配置主服务器的密码</li>
+<li><code>sentinel monitor &lt;master-group-name&gt; &lt;ip&gt; &lt;port&gt; &lt;quorm&gt;</code>,配置需要监视的主服务器,最后一个为 <code>仲裁参数</code> ,代表Sentinel集群中必须有至少2个实例认为主服务器不可用,其中一个尝试启动故障转移,默认 <code>127.0.0.1 6379 2</code></li>
+<li><code>sentinel down-after-milliseconds &lt;master-name&gt; &lt;milliseconds&gt;</code> , 主服务器未回复sentinel ping的时长,如果超过这个时长,则这个sentinel实例主观的认为主服务器不可用,默认<code>3000</code></li>
+<li><code>sentinel parallel-syncs &lt;master-name&gt; &lt;numreplicas&gt;</code> , 设置可在同一故障转移后重新配置以使用新主服务器的从服务器数,默认 <code>1</code></li>
+<li><code>sentinel failover-timeout &lt;master-name&gt; &lt;milliseconds&gt;</code> ,指定故障转移超时时长,默认 <code>180000</code></li>
+</ul>
+<h3 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h3><p>可以通过以下两种方式开启Sentinel:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">redis-server sentinel.conf --sentinel</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">redis-sentinel sentinel.conf</span><br></pre></td></tr></table></figure>
+<h3 id="Sentinel-解析"><a href="#Sentinel-解析" class="headerlink" title="Sentinel 解析"></a>Sentinel 解析</h3><p>任何一个sentinel实例主要达到SDOWN的条件,就将该服务器标记为 SDOWN,如果有至少 <code>qurom</code> 个实例都认为该服务器SDOWN,就标记为 ODOWN,此时触发故障转移,需要满足大多数Sentinel实例的授权才能进行故障转移。例设有5个sentinel 实例,配置 qurom 为 2 , 5个实例,有2个认为服务器无法访问,就尝试故障转移,只有3个或以上实例授权后才能执行故障转移,如果qurom设置为5,则当ODOWN时,直接进行故障转移。</p>
+<h4 id="Sentinel-实例之间的通信"><a href="#Sentinel-实例之间的通信" class="headerlink" title="Sentinel 实例之间的通信"></a>Sentinel 实例之间的通信</h4><p>Sentinel 实例之间通过名为 <code>__sentinel__:hello</code> 的 Pub/Sub channel 进行通信</p>
+<ul>
+<li>每个 Sentinel 每隔2秒向 channel 中发送 ip port runid 宣布它的存在</li>
+<li>每个 Sentinel 订阅 channel ,当检测到新的 Sentinel 后,将它添加进集群中</li>
+<li>消息中包括完整的当前服务器的配置,如果某个Sentinel 还是旧的服务器的配置,将会立刻更新</li>
+<li>在向主服务器添加新的标记之前，Sentinel始终检查是否已存在具有相同runid或相同地址（ip和端口对）的标记。在这种情况下，将删除所有匹配的标记，并添加新的标记。</li>
+</ul>
+<h4 id="SDOWN-和-ODOWN状态"><a href="#SDOWN-和-ODOWN状态" class="headerlink" title="SDOWN 和 ODOWN状态"></a>SDOWN 和 ODOWN状态</h4><ul>
+<li>Subjectively Down(SDOWN,主观下线),单个实例对服务器做出的下线判断</li>
+<li>Objectively Down(ODOWN,客观下线),多个实例对同一个服务器做出的下线判断,并且多个实例之间已经通过 <code>SENTINEL is-master-down-by-addr</code> 交流之后做出的下线判断。</li>
+</ul>
+<p>Sentinel 每隔1秒向服务器发出 ping 命令,如果服务器距离上次回复ping 已经超过了 <code>down-after-milliseconds</code> 所设置的时长,或者不是以下三个中的命令时,sentinel 认为这个服务器下线了(主观下线):</p>
+<ul>
+<li>+PONG</li>
+<li>-LOADING</li>
+<li>-MASTERDOWN</li>
+</ul>
+<p>当多个sentinel实例(qurom)对同一个服务器做出主观下线的判断后,状态变为 <code>ODOWN</code></p>
+<h4 id="Slave-选择和优先权"><a href="#Slave-选择和优先权" class="headerlink" title="Slave 选择和优先权"></a>Slave 选择和优先权</h4><p>当Sentinel开始执行故障转移时,需要在 从服务器之间选出一个,来提升为主服务器,只要参考以下4个方面:</p>
+<ol>
+<li>与原主服务器断开连接的时长</li>
+<li>Slave priority,在 redis.conf 中有配置 <code>slave-priority</code>,默认为100,数字越小将越优先</li>
+<li>已经处理的复制偏移量</li>
+<li>Run ID</li>
+</ol>
+<h4 id="分区下的一致性"><a href="#分区下的一致性" class="headerlink" title="分区下的一致性"></a>分区下的一致性</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">            +-------------+</span><br><span class="line">            | Sentinel 1  | &lt;--- Client A</span><br><span class="line">            | Redis 1 (M) |</span><br><span class="line">            +-------------+</span><br><span class="line">                    |</span><br><span class="line">                    |</span><br><span class="line">+-------------+     |                     +------------+</span><br><span class="line">| Sentinel 2  |-----+-- / partition / ----| Sentinel 3 | &lt;--- Client B</span><br><span class="line">| Redis 2 (S) |                           | Redis 3 (M)|</span><br><span class="line">+-------------+                           +------------+</span><br></pre></td></tr></table></figure>
+<p>初始状态下redis3是master, redis1和redis2是slave。之后redis3所在的主机网络不可用了，sentinel1和sentinel2启动了failover并把redis1选举为master。</p>
+<p>Sentinel集群的特性保证了sentinel1和sentinel2得到了关于master的最新配置。但是sentinel3依然持着的是旧的配置，因为它与外界隔离了。</p>
+<p>客户端将依然可以向redis3写数据，但是当网络恢复后，redis3就会变成redis的一个slave，那么，在网络隔离期间，客户端向redis3写的数据将会丢失。</p>
+<p>如果你把redis当做缓存来使用，那么你也许能容忍这部分数据的丢失。<br>但如果你把redis当做一个存储系统来使用，你也许就无法容忍这部分数据的丢失了。</p>
+<p>因为redis采用的是异步复制，在这样的场景下，没有办法避免数据的丢失。然而，你可以通过以下配置来配置redis3和redis1，使得数据不会丢失。</p>
+<p>可以通过下面2个参数进行配置,保证只要有一个从服务器断开了与主服务器的连接就不执行写入操作。具体可以参考 <a href="/2019/05/07/redis-6-repl">Redis从入门到精通(六、Redis主从复制)</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">min-slaves-to-write 1</span><br><span class="line">min-slaves-max-lag 10</span><br></pre></td></tr></table></figure>
+<h4 id="Sentinel-persistent-state"><a href="#Sentinel-persistent-state" class="headerlink" title="Sentinel persistent state"></a>Sentinel persistent state</h4><p>Sentinel状态保留在sentinel配置文件中。这意味着停止并重新启动Sentinel进程是安全的。</p>
+<hr>
+<p>更多详细资料参考:</p>
+<p><a href="https://redis.io/topics/sentinel" target="_blank" rel="noopener">Redis Sentinel 官方文档</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-7-sentinel/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Redis/">
+              #Redis
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/redis-6-repl/" target="_self">Redis从入门到精通(六、Redis主从复制)</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/redis-8-cluster/" target="_self">Redis从入门到精通(八、Redis 集群)</a>
+        <i class="iconfont icon-next"></i>
+      </div>
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>

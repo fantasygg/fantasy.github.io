@@ -8,12 +8,12 @@
   
   
   
-  <title>标签: Redis | Wangkai&#39;s blog</title>
+  <title>Redis从入门到精通(二、Redis的数据类型) | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Hexo, theme-bmw">
+    <meta name="keywords" content="Redis从入门到精通,Redis,">
   
 
   <script>
@@ -151,75 +151,151 @@
   })
 </script>
 
-      <div class="container">
-  <div class="timeline">
-  <span class="archive-move-on"></span>
-  <span class="archive-page-counter">
-    
-      <span>当前位于 1/3 页</span>
-    
-  </span>
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Redis从入门到精通(二、Redis的数据类型)</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-04-29
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Redis从入门到精通/">
+            Redis从入门到精通
+          </a>
+      </span>
+    
+    
+  </div>
+
   
-    <div class="collection-title">
-      <h2>
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="Redis的数据类型"><a href="#Redis的数据类型" class="headerlink" title="Redis的数据类型"></a>Redis的数据类型</h2><ul>
+<li><code>Binary-safe strings</code> , 简单的<code>K-V</code> 结构的存储</li>
+<li><code>Lists</code> , 按插入顺序排序的字符串元素集合。基本上就是链表</li>
+<li><code>Sets</code> ,唯一的，不排序的集合</li>
+<li><code>Sorted sets</code> ,类似于集合，但每个字符串元素都与一个称为score的浮数值相关联,元素总是按分数排序，因此与集合不同，可以检索一系列元素</li>
+<li><code>Hashes</code> , 由与值关联的字段组成的映射。字段和值都是字符串</li>
+<li><code>Bit arrays (or simply bitmaps)</code> , 可以使用特殊命令处理字符串值</li>
+<li><code>HyperLogLogs</code> , 这是一个概率数据结构，用于估计集合的基数</li>
+<li><code>Streams</code> ,仅附加的类似于地图的条目集合，提供抽象日志数据类型</li>
+</ul>
+<h2 id="Redis-常用的数据类型"><a href="#Redis-常用的数据类型" class="headerlink" title="Redis 常用的数据类型"></a>Redis 常用的数据类型</h2><h3 id="1-strings"><a href="#1-strings" class="headerlink" title="1. strings"></a>1. strings</h3><p><code>strings</code> 可以用来存储 <code>k-v</code> 结构的数据,做计数器等;</p>
+<p><img src="https://user-images.githubusercontent.com/13445354/57230306-9f0f9480-704a-11e9-814c-e2494812c66f.png" alt=" "></p>
+<p>常用命令:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">set &lt;key&gt; &lt;value&gt;</span><br><span class="line">get &lt;key&gt;</span><br><span class="line">incr &lt;key&gt;</span><br><span class="line">mget &lt;key&gt; &lt;key...&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="2-lists"><a href="#2-lists" class="headerlink" title="2. lists"></a>2. lists</h3><p><code>Lists</code>,可以用来实现粉丝列表,评论列表等；</p>
+<p><img src="https://user-images.githubusercontent.com/13445354/57266637-6b1a8a80-70af-11e9-9368-65b4576bb5db.png" alt=" "></p>
+<p>常用命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">lpush &lt;key&gt; &lt;value&gt;</span><br><span class="line">lpop &lt;key&gt;</span><br><span class="line">rpush &lt;key&gt; &lt;value&gt;</span><br><span class="line">rpop &lt;key&gt;</span><br><span class="line">lrange &lt;key&gt; &lt;start&gt; &lt;end&gt;</span><br><span class="line"></span><br><span class="line"># lpush 是把元素插入到链表的头部，lpop 是从头部弹出一个元素并删除</span><br><span class="line"># rpush 是把元素插入到链表的尾部，rpop 是从尾部弹出一个元素并删除</span><br></pre></td></tr></table></figure>
+<h3 id="3-sets"><a href="#3-sets" class="headerlink" title="3. sets"></a>3. sets</h3><p><code>Sets</code> ,可以利用其无序,唯一(自动去重)的特性，例如，共同好友(用到了 <code>SINTER</code> 命令)等;</p>
+<p><img src="https://user-images.githubusercontent.com/13445354/57266655-7ec5f100-70af-11e9-9f3e-f73eb9b7b852.png" alt=" "></p>
+<p>执行<code>sadd &lt;key&gt; &lt;value&gt;</code> , 成功返回<code>1</code>,数据已存在返回<code>0</code>,数据类型不对返回异常</p>
+<p>常用命令:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sadd &lt;key&gt; &lt;member&gt; &lt;member...&gt;</span><br><span class="line">scard &lt;key&gt;</span><br><span class="line">sdiff &lt;key&gt; &lt;key...&gt;</span><br><span class="line">spop &lt;key&gt; [count]</span><br><span class="line">smembers &lt;key&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="4-sorted-sets"><a href="#4-sorted-sets" class="headerlink" title="4. sorted sets"></a>4. sorted sets</h3><p><code>Sorted sets</code>,用来做排名等;</p>
+<p><img src="https://user-images.githubusercontent.com/13445354/57230870-eb0f0900-704b-11e9-8a9e-298dc2b774b0.png" alt=" "></p>
+<p><img src="https://user-images.githubusercontent.com/13445354/57230991-31646800-704c-11e9-8f09-be802e641acf.png" alt=" "></p>
+<p><code>zadd</code> 命令如果已存在会覆盖</p>
+<p>常用命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">zadd &lt;key&gt; &lt;score&gt; &lt;member&gt;</span><br><span class="line">zrange &lt;key&gt; &lt;start&gt; &lt;end&gt;</span><br><span class="line">zrem &lt;key&gt; &lt;member&gt;</span><br></pre></td></tr></table></figure>
+<h3 id="5-hashes"><a href="#5-hashes" class="headerlink" title="5. hashes"></a>5. hashes</h3><p><code>Hashes</code> , 用来存储个人信息等;</p>
+<p><img src="https://user-images.githubusercontent.com/13445354/57231158-9029e180-704c-11e9-9083-82b702b81405.png" alt=" "></p>
+<p>常用命令:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hset &lt;key&gt; &lt;field&gt; &lt;value&gt;</span><br><span class="line">hget &lt;key&gt; &lt;field&gt;</span><br><span class="line">hgetall &lt;key&gt;</span><br></pre></td></tr></table></figure>
+<hr>
+<p>更多关于<code>Redis数据类型</code>的内容可以参考:</p>
+<p><a href="https://redis.io/commands" target="_blank" rel="noopener">Redis命令-官方文档</a><br><a href="https://redis.io/topics/data-types-intro" target="_blank" rel="noopener">Redis数据类型-官方文档</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
         
-          <span>标签 : Redis</span>
         
-      </h2>
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-2-data-types/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
     </div>
   
   
   
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-8-cluster/">
-          <span>Redis从入门到精通(八、Redis 集群)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        05-14
-      </div>
-    </header>
-  </article>
+
   
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-7-sentinel/">
-          <span>Redis从入门到精通(七、Redis Sentinel)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        05-08
-      </div>
-    </header>
-  </article>
-  
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-6-repl/">
-          <span>Redis从入门到精通(六、Redis主从复制)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        05-07
-      </div>
-    </header>
-  </article>
-  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Redis/">
+              #Redis
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
 </div>
-  <nav class="page-navigation">
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/redis-1-install/" target="_self">Redis从入门到精通(一、安装)</a>
+      </div>
     
     
-      <a href="/tags/Redis/page/2/">下一页</a>
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/redis-3-ex-evict /" target="_self">Redis从入门到精通(三、Redis的过期策略和内存淘汰机制)</a>
+        <i class="iconfont icon-next"></i>
+      </div>
     
   </nav>
+
+   
+
+   
+
 </div>
+
 
       <footer>
   <p class="site-info">
