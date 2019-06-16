@@ -8,12 +8,12 @@
   
   
   
-  <title>归档 | Wangkai&#39;s blog</title>
+  <title>Redis从入门到精通(九、Redis使用中常见的问题) | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Hexo, theme-bmw">
+    <meta name="keywords" content="Redis从入门到精通,Redis,">
   
 
   <script>
@@ -151,73 +151,146 @@
   })
 </script>
 
-      <div class="container">
-  <div class="timeline">
-  <span class="archive-move-on"></span>
-  <span class="archive-page-counter">
-    
-      <span>Wow! 一共有 10 篇文章</span>
-    
-  </span>
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Redis从入门到精通(九、Redis使用中常见的问题)</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-06-04
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Redis从入门到精通/">
+            Redis从入门到精通
+          </a>
+      </span>
+    
+    
+  </div>
+
   
-    <div class="collection-title">
-      <h2>
-        <span>2019</span>
-      </h2>
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>如果我们的查询数据路线是: App -&gt; Redis -&gt; MySQL(或其它RDBS),正常情况下,我们查询数据都会在Redis命中,Redis未命中的情况下才去查询MySQL,然后将查询到的数据写入到Redis中,这样下次就直接可以在Redis层命中。</p>
+<p>那么如果查询一条MySQL中压根儿根本就不存在的数据，也就是缓存和数据库都查询不到这条数据，但是请求每次都会打到数据库上面去。这种查询不存在数据的现象我们称为<strong>缓存穿透</strong>。</p>
+<h3 id="解决方案-缓存穿透"><a href="#解决方案-缓存穿透" class="headerlink" title="解决方案(缓存穿透)"></a>解决方案(缓存穿透)</h3><ul>
+<li>将null值存入redis,设置过期时间</li>
+<li>BloomFilter</li>
+</ul>
+<p>第一种方案比较简单易懂,查询不到数据,将Null值存到Redis中,并设置上过期时间,这样下次请求再过来,可以直接返回Null,不会再落到MySQL。</p>
+<p>但是,针对于一些恶意攻击，攻击带过来的大量key 是不存在的，那么我们采用第一种方案就会缓存大量不存在key的数据。此时我们采用第一种方案就不合适了，我们完全可以先对使用第二种方案进行过滤掉这些key。关于 <code>BloomFilter</code> , 下文列出简单的描述,我们可以在应用层加一层 <code>BloomFilter</code> 来解决这个问题。</p>
+<blockquote>
+<p>Bloomfilter: 布隆过滤器, 它是由一个很长的二进制向量和一系列随机映射函数组成，布隆过滤器可以用于检索一个元素是否在一个集合中。它的优点是空间效率和查询时间都远远超过一般的算法，缺点是有一定的误识别率。即Bloom Filter报告某一元素存在于某集合中，但是实际上该元素并不在集合中。但是如果某个元素确实没有在该集合中，那么Bloom Filter 是不会报告该元素存在于集合中的，所以不会漏报。</p>
+</blockquote>
+<p>针对key非常多、请求重复率比较低的数据，我们就没有必要进行缓存，使用第二种方案直接过滤掉。而对于空数据的key有限的，重复率比较高的，我们则可以采用第一种方式进行缓存。</p>
+<hr>
+<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>在高并发的系统中，大量的请求同时查询一个 key 时，此时这个key正好失效了，就会导致大量的请求都打到数据库上面去。这种现象我们称为<strong>缓存击穿</strong>。</p>
+<h3 id="解决方案-缓存击穿"><a href="#解决方案-缓存击穿" class="headerlink" title="解决方案(缓存击穿)"></a>解决方案(缓存击穿)</h3><ul>
+<li>热点Key不设置过期时间</li>
+<li>使用 互斥锁,在第一个查询数据的请求上使用一个互斥锁来锁住它。后续线程阻塞，等第一个线程查询到数据并做了缓存,锁释放后后续线程，发现已经有缓存了，就直接走缓存。</li>
+</ul>
+<p>第一种方案使用具有局限性,需要结合业务考虑是否可以不设置过期时间。<br>第二种方案,由于使用了互斥锁,所以性能肯定会差很多。</p>
+<hr>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>缓存雪崩的情况是说，当某一时刻发生大规模的缓存失效的情况 或者 缓存服务宕机了，会有大量的请求进来直接打到DB上面。称为 <strong>缓存雪崩</strong>。</p>
+<h3 id="解决方案-缓存雪崩"><a href="#解决方案-缓存雪崩" class="headerlink" title="解决方案(缓存雪崩)"></a>解决方案(缓存雪崩)</h3><ul>
+<li>保证Redis服务的高可用</li>
+<li>应用种使用本地缓存,以及限流降级等措施</li>
+<li>解决热点数据集中失效,为每个key设置不同的过期时间</li>
+</ul>
+<p>Redis 的集群是必须要做的,保证Redis服务的高可用,在应用种也要处理Redis宕机的情况,比如做出限流或者降级的措施,采用本地缓存等,让查询请求尽可能少的落到数据库上。Redis的集群方案怎么来做,可以参考我之前的文章。</p>
+<p>针对一些热点数据集中失效的问题,可以采用设置不同的过期时间的方案,在一个基础时间上左右浮动,例如: 30min + 3s，30min -5s .</p>
+<hr>
+<h2 id="Redis与持久层数据一致性的问题"><a href="#Redis与持久层数据一致性的问题" class="headerlink" title="Redis与持久层数据一致性的问题"></a>Redis与持久层数据一致性的问题</h2><p>App -&gt; Redis -&gt; MySQL ,App查询请求先请求Redis,如果查询不到再请求MySQL,查询到数据后将数据写入MySQL。</p>
+<p>在这样的一条查询链路种,由于数据的写入可能会造成Redis与MySQL数据的不一致。</p>
+<p>比如: 数据写入时,先写入Redis再写入MySQL,可能在写入MySQL时出现异常,导致数据不一致,反过来也是如此。</p>
+<h3 id="解决方案-数据不一致"><a href="#解决方案-数据不一致" class="headerlink" title="解决方案(数据不一致)"></a>解决方案(数据不一致)</h3><ul>
+<li>写入时,删除Redis中的数据</li>
+</ul>
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在实际使用过程种还是要结合具体的业务,来从上述几个方面来考虑程序的健壮性。最终的目的都是保护数据库。</p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-9/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
     </div>
   
   
   
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-9/">
-          <span>Redis从入门到精通(九、Redis使用中常见的问题)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        06-04
-      </div>
-    </header>
-  </article>
+
   
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-8-cluster/">
-          <span>Redis从入门到精通(八、Redis 集群)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        05-14
-      </div>
-    </header>
-  </article>
-  
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-7-sentinel/">
-          <span>Redis从入门到精通(七、Redis Sentinel)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        05-08
-      </div>
-    </header>
-  </article>
-  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Redis/">
+              #Redis
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
 </div>
-  <nav class="page-navigation">
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
     
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/redis-8-cluster/" target="_self">Redis从入门到精通(八、Redis 集群)</a>
+      </div>
     
-      <a href="/archives/page/2/">下一页</a>
     
   </nav>
+
+   
+
+   
+
 </div>
+
 
       <footer>
   <p class="site-info">
