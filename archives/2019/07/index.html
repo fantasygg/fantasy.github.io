@@ -8,12 +8,12 @@
   
   
   
-  <title>Redis从入门到精通(三、Redis的过期策略和内存淘汰机制) | Wangkai&#39;s blog</title>
+  <title>归档: 2019/7 | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Redis从入门到精通,Redis,">
+    <meta name="keywords" content="Hexo, theme-bmw">
   
 
   <script>
@@ -151,156 +151,43 @@
   })
 </script>
 
-      
-
-
-
-
-
-
-
-
-<div class="container post-index">
-
+      <div class="container">
+  <div class="timeline">
+  <span class="archive-move-on"></span>
+  <span class="archive-page-counter">
+    
+      <span>Wow! 一共有 11 篇文章</span>
+    
+  </span>
   
-
-<div class="post">
-  <h1 class="article-title">
-    <span>Redis从入门到精通(三、Redis的过期策略和内存淘汰机制)</span>
-  </h1>
-  <div class="article-top-meta">
-    <span>
-      发布 : 
-      2019-04-30
-    </span>
-    
-      <span>
-        分类 : 
-          <a href="/categories/Redis从入门到精通/">
-            Redis从入门到精通
-          </a>
-      </span>
-    
-    
-  </div>
-
   
-
-  <div class="article-content">
-    <div class="markdown-body">
-      <h2 id="Redis-过期策略"><a href="#Redis-过期策略" class="headerlink" title="Redis 过期策略"></a>Redis 过期策略</h2><p><code>Redis</code> 可以对 <code>key</code> 设置过期时间，这是一个非常实用的功能，那 <code>Redis</code> 是如何实现这个机制的呢？答案就是:<strong>定期删除 + 惰性删除</strong></p>
-<ul>
-<li>定期删除，Redis默认每隔100ms会从设置了过期时间的key中随机抽取一部分来检查是否过期,如果过期就删除。</li>
-<li>惰性删除，定期删除可能会导致很多设置了过期时间的key没有被及时删除，所以就有了惰性删除,即在查询这个key时，检查一下是否过期,如果过期就删除。</li>
-</ul>
-<hr>
-<h2 id="Redis-内存淘汰机制"><a href="#Redis-内存淘汰机制" class="headerlink" title="Redis 内存淘汰机制"></a>Redis 内存淘汰机制</h2><p>结合<code>定期删除 + 惰性删除</code> Redis 实现了key的过期时间机制，但还是会有一些key会没有被定期删除掉，也没有被查询，就遗留在了内存中，当数据量大到一定程度后，会导致内存的堆积。这就涉及到了 <code>内存淘汰机制</code>。</p>
-<p>当内存容量到达了上限或者 配置的<code>maxmemory</code>时，会触发 <code>内存淘汰策略</code></p>
-<p>Redis提供了8种策略供我们选择:</p>
-<ol>
-<li><code>volatile-lru</code> -&gt; Evict using approximated LRU among the keys with an expire set.</li>
-<li><code>allkeys-lru</code> -&gt; Evict any key using approximated LRU.</li>
-<li><code>volatile-lfu</code> -&gt; Evict using approximated LFU among the keys with an expire set.</li>
-<li><code>allkeys-lfu</code> -&gt; Evict any key using approximated LFU.</li>
-<li><code>volatile-random</code> -&gt; Remove a random key among the ones with an expire set.</li>
-<li><code>allkeys-random</code> -&gt; Remove a random key, any key.</li>
-<li><code>volatile-ttl</code> -&gt; Remove the key with the nearest expire time (minor TTL)</li>
-<li><code>noeviction</code> -&gt; Don’t evict anything, just return an error on write operations.</li>
-</ol>
-<p>先明确一下 <code>LRU</code> 与 <code>LFU</code>:</p>
-<ul>
-<li>LRU(Least Recently Used) : 淘汰最近最少使用的数据，基于访问时间</li>
-<li>LFU(Least Frequently Used): 淘汰最不经常使用的数据，基于访问次数</li>
-</ul>
-<h3 id="怎么开启Redis-的内存淘汰机制"><a href="#怎么开启Redis-的内存淘汰机制" class="headerlink" title="怎么开启Redis 的内存淘汰机制"></a>怎么开启Redis 的内存淘汰机制</h3><p>在<code>redis.conf</code> 中:</p>
-<ul>
-<li>配置 <code>maxmemory &lt;bytes&gt;</code> ,设置<code>Redis</code>的最大内存空间</li>
-<li>配置<code>maxmemory-policy noeviction</code>,设置淘汰策略，默认为 <code>noeviction</code></li>
-</ul>
-<h3 id="如何选择淘汰策略"><a href="#如何选择淘汰策略" class="headerlink" title="如何选择淘汰策略"></a>如何选择淘汰策略</h3><ul>
-<li><code>allkeys-lru</code> 和 <code>allkeys-lfu</code> 适用于存在热点数据的情况。明确有一部分数据访问频率较高，其余数据访问频率较低或者无法预测使用频率。</li>
-<li><code>allkeys-random</code> 适用于所有数据访问概率大致相等</li>
-<li><code>volatile-ttl</code> 根据过期时间的先后顺序进行删除</li>
-<li><code>volatile-lru</code> ,<code>volatile-lru</code> 和<code>volatile-random</code> 适用于希望一些数据能被保存,则可以从设置了过期时间的数据中进行删除</li>
-</ul>
-<p>至于LRU与LFU的选择，则需要根据业务权衡到底是选择 <code>淘汰最近最少使用(LRU)</code> 还是选择 <code>最不经常使用(LFU)</code></p>
-<p><strong>总的来说</strong>,无论是 <code>LRU</code> <code>LFU</code> <code>TTL</code> 还是<code>Random</code> 都是几近算法来实现的,在可靠性和性能上做了一定的平衡。还是应该在业务中主动删除没有价值的数据，或者更新某些key的过期时间等来提高Redis的性能和空间，不能过分依赖于淘汰策略。</p>
-<hr>
-<p>更多资料参考:</p>
-<p><a href="https://redis.io/commands/expire" target="_blank" rel="noopener">Redis-expire-官方文档</a></p>
-<p><a href="https://redis.io/topics/lru-cache" target="_blank" rel="noopener">Redis-lru-cache-官方文档</a></p>
+    <div class="collection-title">
+      <h2>
+        <span>2019</span>
+      </h2>
     </div>
-  </div>
   
-    <div class="copy-right">
-      <div class="markdown-body">
-        <blockquote>
-        
-        
-          本文作者 : Wang Kai <br>
-        
-        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-3-ex-evict /</a><br>
-        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
-        </blockquote>
+  
+  
+  <article class="posts-collapse">
+    <header>
+      <h2>
+        <a href="/passages/docker-mysql-1/">
+          <span>Docker入门（部署MySQL）</span>
+        </a>
+      </h2>
+      <div class="post-meta">
+        07-14
       </div>
-    </div>
+    </header>
+  </article>
   
-  
-  
-
-  
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-      <span>
-        
-          <i class="iconfont icon-06tags"></i>标签: 
-          
-          <span class="span--tag">
-            <a href="/tags/Redis/">
-              #Redis
-            </a>
-          </span>
-          
-        
-      </span>
-    </div>
-    <div class="article-meta pull-right">
-    </div>
-  </div>
 </div>
-
-
-  <aside id="sidebar">
-    <p id="sidebar-header"></p>
-    <ol id="sidebar-toc"></ol>
-  </aside>
-  <script async>setTimeout(generateToc, 10);</script>
-
-
-  <nav class="post-navigation">
+  <nav class="page-navigation">
     
-      <div class="nav-pre">
-        <i class="iconfont icon-prev"></i>
-        上一篇:
-        <a href="/passages/redis-2-data-types/" target="_self">Redis从入门到精通(二、Redis的数据类型)</a>
-      </div>
-    
-    
-      <div class="nav-next">
-        下一篇:
-        <a href="/passages/redis-4-persistence/" target="_self">Redis从入门到精通(四、Redis的持久化和数据备份与恢复)</a>
-        <i class="iconfont icon-next"></i>
-      </div>
     
   </nav>
-
-   
-
-   
-
 </div>
-
 
       <footer>
   <p class="site-info">

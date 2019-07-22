@@ -8,12 +8,12 @@
   
   
   
-  <title>Redis从入门到精通(一、安装) | Wangkai&#39;s blog</title>
+  <title>Docker入门（部署MySQL） | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Redis从入门到精通,Redis,">
+    <meta name="keywords" content="Docker入门,Docker,">
   
 
   <script>
@@ -166,18 +166,18 @@
 
 <div class="post">
   <h1 class="article-title">
-    <span>Redis从入门到精通(一、安装)</span>
+    <span>Docker入门（部署MySQL）</span>
   </h1>
   <div class="article-top-meta">
     <span>
       发布 : 
-      2019-04-17
+      2019-07-14
     </span>
     
       <span>
         分类 : 
-          <a href="/categories/Redis从入门到精通/">
-            Redis从入门到精通
+          <a href="/categories/Docker入门/">
+            Docker入门
           </a>
       </span>
     
@@ -188,38 +188,32 @@
 
   <div class="article-content">
     <div class="markdown-body">
-      <h3 id="linux下安装"><a href="#linux下安装" class="headerlink" title="linux下安装"></a>linux下安装</h3><ol>
-<li><p>下载redis,在<a href="https://redis.io/" target="_blank" rel="noopener">https://redis.io/</a> 或  <a href="https://github.com/antirez/redis/releases" target="_blank" rel="noopener">https://github.com/antirez/redis/releases</a> 下载 <code>redis-xxxx.tar.gz</code></p>
-</li>
-<li><p>解压,我这里下载的是 <code>5.0.0</code> 版本</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar zxvf redis-5.0.0.tar.gz</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>安装依赖环境,需要安装gcc</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install gcc-c++</span><br></pre></td></tr></table></figure>
-<p>没有安装gcc在接下来的安装过程中会出现多处如下错误:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">  CC adlist.o</span><br><span class="line">/bin/sh: cc: 未找到命令</span><br><span class="line">make[1]: *** [adlist.o] 错误 127</span><br><span class="line">make[1]: 离开目录“/usr/local/redis/redis-5.0.0/src”</span><br><span class="line">make: *** [install] 错误 2</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>解压后进入目录,在<code>/redis.5.0.0</code> 目录下,执行</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make install</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>至此已经安装成功，拷贝一份<code>redis.conf</code>，对<code>redis</code>做相关的配置</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp redis.conf ../redis.conf</span><br></pre></td></tr></table></figure>
-<p>回到命令所在的目录，启动redis,验证是否安装成功,执行 <code>redis-server redis.conf</code> 出现下述文字则表示安装成功：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">[root@wangkai-centos redis]# redis-server redis-conf</span><br><span class="line">12241:C 24 Jan 2019 22:24:42.589 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo</span><br><span class="line">12241:C 24 Jan 2019 22:24:42.589 # Redis version=5.0.0, bits=64, commit=00000000, modified=0, pid=12241, just started</span><br><span class="line">12241:C 24 Jan 2019 22:24:42.589 # Configuration loaded</span><br><span class="line">12241:M 24 Jan 2019 22:24:42.590 * Increased maximum number of open files to 10032 (it was originally set to 1024).</span><br><span class="line">                _._                                                  </span><br><span class="line">          _.-``__ &apos;&apos;-._                                             </span><br><span class="line">      _.-``    `.  `_.  &apos;&apos;-._           Redis 5.0.0 (00000000/0) 64 bit</span><br><span class="line">  .-`` .-```.  ```\/    _.,_ &apos;&apos;-._                                   </span><br><span class="line">(    &apos;      ,       .-`  | `,    )     Running in standalone mode</span><br><span class="line">|`-._`-...-` __...-.``-._|&apos;` _.-&apos;|     Port: 6379</span><br><span class="line">|    `-._   `._    /     _.-&apos;    |     PID: 12241</span><br><span class="line">  `-._    `-._  `-./  _.-&apos;    _.-&apos;                                   </span><br><span class="line">|`-._`-._    `-.__.-&apos;    _.-&apos;_.-&apos;|                                  </span><br><span class="line">|    `-._`-._        _.-&apos;_.-&apos;    |           http://redis.io        </span><br><span class="line">  `-._    `-._`-.__.-&apos;_.-&apos;    _.-&apos;                                   </span><br><span class="line">|`-._`-._    `-.__.-&apos;    _.-&apos;_.-&apos;|                                  </span><br><span class="line">|    `-._`-._        _.-&apos;_.-&apos;    |                                  </span><br><span class="line">  `-._    `-._`-.__.-&apos;_.-&apos;    _.-&apos;                                   </span><br><span class="line">      `-._    `-.__.-&apos;    _.-&apos;                                       </span><br><span class="line">          `-._        _.-&apos;                                           </span><br><span class="line">              `-.__.-&apos;</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
+      <h3 id="拉取MySQL镜像"><a href="#拉取MySQL镜像" class="headerlink" title="拉取MySQL镜像"></a>拉取MySQL镜像</h3><p>根据自己的需要选择<code>MySQL</code>的版本号,不加tag默认是 <code>latest</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker pull mysql:5.7</span><br><span class="line">docker pull mysql</span><br></pre></td></tr></table></figure>
 <hr>
-<h3 id="使用docker安装"><a href="#使用docker安装" class="headerlink" title="使用docker安装"></a>使用docker安装</h3><ol>
-<li><p>拉取Redis镜像</p>
-<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker pull redis</span><br></pre></td></tr></table></figure>
-<p><img src="https://user-images.githubusercontent.com/13445354/57229800-8a7ecc80-7049-11e9-999a-b66c73efc21c.png" alt="拉取Redis镜像"></p>
-</li>
-<li><p>启动Redis容器</p>
-<figure class="highlight docker"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker <span class="keyword">run</span> --name redis -d redis</span><br></pre></td></tr></table></figure>
-<p><img src="https://user-images.githubusercontent.com/13445354/57229928-c2860f80-7049-11e9-8e2b-8314324bfa13.png" alt="启动Redis容器"></p>
-</li>
-</ol>
+<h3 id="启动container"><a href="#启动container" class="headerlink" title="启动container"></a>启动container</h3><p>命令模板:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name &#123;your container name&#125; -p &#123;port&#125;:&#123;container port&#125; -v &#123;your data dir&#125;:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=&#123;your password&#125; -d &#123;mysql:tag&#125;</span><br></pre></td></tr></table></figure>
+<p>mysql:8<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name mysql8 -p 13306:3306 -v /usr/local/mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=&#123;your password&#125; -d mysql</span><br></pre></td></tr></table></figure></p>
+<p>mysql:5.7<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name mysql5.7 -p 13306:3306 -v /usr/local/mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=&#123;your password&#125; -d mysql:5.7</span><br></pre></td></tr></table></figure></p>
+<p>对上面的命令中的参数做一下解释:</p>
+<ul>
+<li><code>name</code> 指定container的名称,代替id方便后续的操作</li>
+<li><code>p</code> {宿主机port}:{container port} ,指定开放宿主机的哪个端口对外服务</li>
+<li><code>v</code> 指定宿主机的挂载目录</li>
+<li><code>e</code> 设置root用户的密码</li>
+<li><code>d</code> 以守护进程运行</li>
+</ul>
+<p>至此，<code>MySQL</code>容器已经成功启动</p>
 <hr>
+<h3 id="设置MySQL远程连接"><a href="#设置MySQL远程连接" class="headerlink" title="设置MySQL远程连接"></a>设置MySQL远程连接</h3><p>这里其实按照上述步骤部署成功后,<code>MySQL5.7</code>的版本，使用<code>root</code> 用户已经可以远程连接了，但是<code>MySQL8</code>的版本，在navicat或者其它的一些客户端工具连接时会报错 ，大致报错信息:</p>
+<blockquote>
+<p>1251 - Client does not support authentication protocol requested by server - consider upgrading MySQL client</p>
+</blockquote>
+<p>原因是<code>MySQL8</code>以后密码的加密规则和5版本的不一致(MySQL8使用的是<code>caching_sha2_password</code>),而大部分客户端工具只支持5版本的<code>mysql_native_password</code>加密,这里需要修改 <code>MySQL8</code> 下密码的加密规则。</p>
+<p>执行上述命令进入MySQL容器的交互命令行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker exec -it &#123;your container name&#125; bash</span><br></pre></td></tr></table></figure>
+<p>修改 密码加密方式，这里提前创建了一个<code>dev</code> 的用户，修改以下<code>dev</code> 的密码加密规则为<code>mysql_native_password</code><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select user,host,plugin from user;</span><br><span class="line">+------------------+-----------+-----------------------+</span><br><span class="line">| user             | host      | plugin                |</span><br><span class="line">+------------------+-----------+-----------------------+</span><br><span class="line">| dev              | %         | caching_sha2_password |</span><br><span class="line">| root             | %         | caching_sha2_password |</span><br><span class="line">| mysql.infoschema | localhost | caching_sha2_password |</span><br><span class="line">| mysql.session    | localhost | caching_sha2_password |</span><br><span class="line">| mysql.sys        | localhost | caching_sha2_password |</span><br><span class="line">| root             | localhost | caching_sha2_password |</span><br><span class="line">+------------------+-----------+-----------------------+</span><br><span class="line">6 rows in set (0.00 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; alter user &apos;dev&apos;@&apos;%&apos; identified with &apos;mysql_native_password&apos; by &apos;dev123456&apos;;</span><br><span class="line">Query OK, 0 rows affected (0.02 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; flush privileges ;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br><span class="line"></span><br><span class="line">mysql&gt; select user,host,plugin from user;</span><br><span class="line">+------------------+-----------+-----------------------+</span><br><span class="line">| user             | host      | plugin                |</span><br><span class="line">+------------------+-----------+-----------------------+</span><br><span class="line">| dev              | %         | mysql_native_password |</span><br><span class="line">| root             | %         | caching_sha2_password |</span><br><span class="line">| mysql.infoschema | localhost | caching_sha2_password |</span><br><span class="line">| mysql.session    | localhost | caching_sha2_password |</span><br><span class="line">| mysql.sys        | localhost | caching_sha2_password |</span><br><span class="line">| root             | localhost | caching_sha2_password |</span><br><span class="line">+------------------+-----------+-----------------------+</span><br><span class="line">6 rows in set (0.00 sec)</span><br></pre></td></tr></table></figure></p>
+<p>现在使用 <code>&#39;dev&#39;@&#39;%&#39;</code> 用户就可以远程连接了。</p>
     </div>
   </div>
   
@@ -230,7 +224,7 @@
         
           本文作者 : Wang Kai <br>
         
-        原文链接 : <a href>https://blog.fantasywk.tech/passages/redis-1-install/</a><br>
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/docker-mysql-1/</a><br>
         版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
         </blockquote>
       </div>
@@ -248,8 +242,8 @@
           <i class="iconfont icon-06tags"></i>标签: 
           
           <span class="span--tag">
-            <a href="/tags/Redis/">
-              #Redis
+            <a href="/tags/Docker/">
+              #Docker
             </a>
           </span>
           
@@ -274,15 +268,9 @@
       <div class="nav-pre">
         <i class="iconfont icon-prev"></i>
         上一篇:
-        <a href="/passages/git-commands/" target="_self">Git命令一览</a>
+        <a href="/passages/redis-9/" target="_self">Redis从入门到精通(九、Redis使用中常见的问题)</a>
       </div>
     
-    
-      <div class="nav-next">
-        下一篇:
-        <a href="/passages/redis-2-data-types/" target="_self">Redis从入门到精通(二、Redis的数据类型)</a>
-        <i class="iconfont icon-next"></i>
-      </div>
     
   </nav>
 
