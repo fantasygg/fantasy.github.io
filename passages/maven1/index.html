@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="董沅鑫, yuanxin.me@gmail.com">
+  
+  
+  
+  <title>Maven总结（一.初识Maven） | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Maven入门,Maven,">
+  
+
+  <script>
+    console.log('\n%c Hexo-theme-bmw v4.0 ' + '%c 🎉 https://github.com/dongyuanxin/theme-bmw 🎉\n' + '\n%c View demo online ' + '%c 🔍 https://godbmw.com/ 🔍  \n' , 'color: #fadfa3; background: #030307; padding:3px 0;', '', 'color: #fadfa3; background: #030307; padding:3px 0;', '');
+  </script>
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/fantasygg">
+          
+            <a href="https://github.com/fantasygg" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Maven总结（一.初识Maven）</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-08-03
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Maven入门/">
+            Maven入门
+          </a>
+      </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h1 id="Maven"><a href="#Maven" class="headerlink" title="Maven"></a>Maven</h1><ul>
+<li><a href="http://maven.apache.org/" target="_blank" rel="noopener">官网地址</a></li>
+<li><a href="https://mvnrepository.com/" target="_blank" rel="noopener">中央仓库</a></li>
+</ul>
+<h2 id="一、初识Maven"><a href="#一、初识Maven" class="headerlink" title="一、初识Maven"></a>一、初识Maven</h2><p>引用来自maven官网的介绍:</p>
+<blockquote>
+<p>Apache Maven is a software project management and comprehension tool. Based on the concept of a project object model (POM), Maven can manage a project’s build, reporting and documentation from a central piece of information.</p>
+</blockquote>
+<p><strong>Maven 能为我们做什么？</strong></p>
+<ul>
+<li><p>我们可以使用 maven 轻松构建项目。</p>
+</li>
+<li><p>我们可以使用 maven 的帮助轻松添加项目的 jar 和其他依赖项。</p>
+</li>
+<li><p>Maven 提供项目信息（日志文档，依赖列表，单元测试报告等）</p>
+</li>
+<li><p>在更新 JAR 和其他依赖项的中央存储库时，Maven 对项目非常有帮助。</p>
+</li>
+<li><p>在 Maven 的帮助下，我们可以将任意数量的项目构建为输出类型，如 JAR，WAR 等，而无需执行任何脚本编写。</p>
+</li>
+<li><p>使用 Maven，我们可以轻松地将我们的项目与源代码控制系统（例如 Subversion 或 Git）集成。</p>
+</li>
+</ul>
+<hr>
+<h2 id="二、安装和配置"><a href="#二、安装和配置" class="headerlink" title="二、安装和配置"></a>二、安装和配置</h2><p><a href="http://maven.apache.org/download.cgi" target="_blank" rel="noopener">下载地址</a></p>
+<p><strong>此教程以 3.5.4版本进行，后续版本可能会有不同</strong></p>
+<hr>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><h4 id="Windows安装"><a href="#Windows安装" class="headerlink" title="Windows安装"></a>Windows安装</h4><ol>
+<li><p>进入下载地址，选择 <code>Binary zip archive</code>,下载即可。</p>
+</li>
+<li><p>下载完成后解压，会得到一个如下的目录：</p>
+</li>
+</ol>
+<p><img src="https://user-images.githubusercontent.com/13445354/55606166-5b571000-57aa-11e9-92ab-dc5c5f24b57e.png" alt="目录"></p>
+<ol start="3">
+<li><p>在系统中配置环境变量</p>
+<p> 将<code>/bin</code>所在目录配置在系统环境变量中，我这里是<code>D:\maven\apache-maven-3.5.4\bin</code></p>
+</li>
+<li><p>在命令行中验证安装是否成功</p>
+<p> 打开命令行界面，执行<code>mvn -v</code> 或 <code>mvn -version</code>，出现以下界面即为安装成功，可以看到maven版本号等一系列信息。</p>
+<p> <img src="https://user-images.githubusercontent.com/13445354/55606437-5777bd80-57ab-11e9-9b17-9ca8a2ace65e.png" alt="image"></p>
+</li>
+</ol>
+<h4 id="Linux安装"><a href="#Linux安装" class="headerlink" title="Linux安装"></a>Linux安装</h4><ol>
+<li><strong>解压</strong></li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar zxvf apache-maven-3.6.0-bin.tar.gz</span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">unzip apache-maven-3.6.0-bin.zip</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li><strong>设置环境变量</strong></li>
+</ol>
+<ul>
+<li><code>maven</code>依赖于<code>java</code>的环境变量,所以先确定<code>java</code>的环境变量。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@wangkai-centos maven]# java -version</span><br><span class="line">java version &quot;1.8.0_192&quot;</span><br><span class="line">Java(TM) SE Runtime Environment (build 1.8.0_192-b12)</span><br><span class="line">Java HotSpot(TM) 64-Bit Server VM (build 25.192-b12, mixed mode)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>在 <code>/etc/profile</code>中加入:</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span>maven</span><br><span class="line">M2_HOME=/usr/local/maven/apache-maven-3.6.0</span><br><span class="line">PATH=$PATH:$JAVA_HOME/bin:$M2_HOME/bin</span><br><span class="line">export PATH JAVA_HOME CLASSPATH M2_HOME</span><br></pre></td></tr></table></figure>
+<p>保存，退出。</p>
+<ul>
+<li>使配置生效:</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source /etc/profile</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li><strong>验证是否安装成功</strong></li>
+</ol>
+<p>验证是否成功，出现下述情况则代表成功:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@wangkai-centos maven]# mvn -v</span><br><span class="line">Apache Maven 3.6.0 (97c98ec64a1fdfee7767ce5ffb20918da4f719f3; 2018-10-25T02:41:47+08:00)</span><br><span class="line">Maven home: /usr/local/maven/apache-maven-3.6.0</span><br><span class="line">Java version: 1.8.0_192, vendor: Oracle Corporation, runtime: /usr/local/java/jdk1.8/jre</span><br><span class="line">Default locale: zh_CN, platform encoding: UTF-8</span><br><span class="line">OS name: &quot;linux&quot;, version: &quot;3.10.0-957.1.3.el7.x86_64&quot;, arch: &quot;amd64&quot;, family: &quot;unix&quot;</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>安装成功之后，在回头来看一下maven 的目录结构：</p>
+<p><img src="https://user-images.githubusercontent.com/13445354/55606166-5b571000-57aa-11e9-92ab-dc5c5f24b57e.png" alt="目录"></p>
+<ul>
+<li><code>bin</code>下面mvn运行的一些脚本</li>
+<li><code>boot</code>下面只有一个文件<code>plexus-classworlds-2.5.2.jar</code>（不同maven版本此文件版本号可能不同），这是maven的类加载器，一般不用去关心。</li>
+<li><code>conf</code>此目录下有一个<code>setting.xml</code>，非常重要，它可以直接定制 了maven，需要注意的是，在<code>~/.m2/</code>这个目录下还有一个<code>setting.xml</code>。前者是在<strong>全局范围</strong>内对maven进行配置，后者是在<strong>用户范围</strong>内。</li>
+<li><code>lib</code>包含了所有maven运行需要的java类库，目录下有一个<code>maven-model-builder-3.5.4.jar</code>,这是maven的超级pom，里面会有一些maven默认的配置，比如，默认的中央仓库地址。</li>
+<li><code>LICENSE</code>记录了maven使用的软件许可证，Apache License Version 2.0, January 2004</li>
+<li><code>NOTICE</code>记录了maven包含的第三方软件</li>
+<li><code>README.txt</code> 对maven做了简单的介绍，安装步骤等</li>
+</ul>
+<p>下面重点看一下<code>/setting.xml</code>。<code>~/.m2</code>(用户目录下的/.m2)下的<code>setting.xml</code>与此类似。</p>
+<p>进入到<code>/conf</code>下，有个<code>setting.xml</code>的文件，便是maven 的配置文件了，我在这里删去了原来文件中的注释，并做了一些修改：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">settings</span> <span class="attr">xmlns</span>=<span class="string">"http://maven.apache.org/SETTINGS/1.0.0"</span></span></span><br><span class="line"><span class="tag">          <span class="attr">xmlns:xsi</span>=<span class="string">"http://www.w3.org/2001/XMLSchema-instance"</span></span></span><br><span class="line"><span class="tag">          <span class="attr">xsi:schemaLocation</span>=<span class="string">"http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd"</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- 1.本地仓库 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- Default: $&#123;user.home&#125;/.m2/repository --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">localRepository</span>&gt;</span>D:\maven\local_repository<span class="tag">&lt;/<span class="name">localRepository</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- maven是否与用户交互 默认：true --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- interactiveMode</span></span><br><span class="line"><span class="comment">      This will determine whether maven prompts you when it needs input. If set to false,</span></span><br><span class="line"><span class="comment">     maven will use a sensible default value, perhaps based on some other setting, for</span></span><br><span class="line"><span class="comment">     the parameter in question.</span></span><br><span class="line"><span class="comment">    --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">interactiveMode</span>&gt;</span>true<span class="tag">&lt;/<span class="name">interactiveMode</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- 是否离线模式 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- offline</span></span><br><span class="line"><span class="comment">     | Determines whether maven should attempt to connect to the network when executing a build.</span></span><br><span class="line"><span class="comment">     | This will have an effect on artifact downloads, artifact deployment, and others.</span></span><br><span class="line"><span class="comment">     |</span></span><br><span class="line"><span class="comment">     | Default: false  --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">offline</span>&gt;</span>false<span class="tag">&lt;/<span class="name">offline</span>&gt;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- 插件组 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- pluginGroups</span></span><br><span class="line"><span class="comment">      | This is a list of additional group identifiers that will be searched when resolving plugins by their prefix, i.e.</span></span><br><span class="line"><span class="comment">      | when invoking a command line like "mvn prefix:goal". Maven will automatically add the group identifiers</span></span><br><span class="line"><span class="comment">      | "org.apache.maven.plugins" and "org.codehaus.mojo" if these are not already contained in the list.</span></span><br><span class="line"><span class="comment">      |--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">pluginGroups</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- pluginGroup</span></span><br><span class="line"><span class="comment">             | Specifies a further group identifier to use for plugin lookup.</span></span><br><span class="line"><span class="comment">            &lt;pluginGroup&gt;com.your.plugins&lt;/pluginGroup&gt;</span></span><br><span class="line"><span class="comment">            --&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">pluginGroups</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- 代理 例如：需要设置http代理才能访问网络 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- proxies</span></span><br><span class="line"><span class="comment">       | This is a list of proxies which can be used on this machine to connect to the network.</span></span><br><span class="line"><span class="comment">       | Unless otherwise specified (by system property or command-line switch), the first proxy</span></span><br><span class="line"><span class="comment">       | specification in this list marked as active will be used.</span></span><br><span class="line"><span class="comment">       |--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">proxies</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- proxy</span></span><br><span class="line"><span class="comment">             | Specification for one proxy, to be used in connecting to the network.</span></span><br><span class="line"><span class="comment">             |</span></span><br><span class="line"><span class="comment">            &lt;proxy&gt;</span></span><br><span class="line"><span class="comment">              &lt;id&gt;optional&lt;/id&gt;</span></span><br><span class="line"><span class="comment">              &lt;active&gt;true&lt;/active&gt;</span></span><br><span class="line"><span class="comment">              &lt;protocol&gt;http&lt;/protocol&gt;</span></span><br><span class="line"><span class="comment">              &lt;username&gt;proxyuser&lt;/username&gt;</span></span><br><span class="line"><span class="comment">              &lt;password&gt;proxypass&lt;/password&gt;</span></span><br><span class="line"><span class="comment">              &lt;host&gt;proxy.host.net&lt;/host&gt;</span></span><br><span class="line"><span class="comment">              &lt;port&gt;80&lt;/port&gt;</span></span><br><span class="line"><span class="comment">              &lt;nonProxyHosts&gt;local.net|some.host.com&lt;/nonProxyHosts&gt;</span></span><br><span class="line"><span class="comment">            &lt;/proxy&gt;</span></span><br><span class="line"><span class="comment">            --&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">proxies</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- 下载与部署仓库的认证信息 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- servers</span></span><br><span class="line"><span class="comment">       | This is a list of authentication profiles, keyed by the server-id used within the system.</span></span><br><span class="line"><span class="comment">       | Authentication profiles can be used whenever maven must make a connection to a remote server.</span></span><br><span class="line"><span class="comment">       |--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">servers</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- server</span></span><br><span class="line"><span class="comment">         | Specifies the authentication information to use when connecting to a particular server, identified by</span></span><br><span class="line"><span class="comment">         | a unique name within the system (referred to by the 'id' attribute below).</span></span><br><span class="line"><span class="comment">         |</span></span><br><span class="line"><span class="comment">         | <span class="doctag">NOTE:</span> You should either specify username/password OR privateKey/passphrase, since these pairings are</span></span><br><span class="line"><span class="comment">         |       used together.</span></span><br><span class="line"><span class="comment">         |</span></span><br><span class="line"><span class="comment">        &lt;server&gt;</span></span><br><span class="line"><span class="comment">          &lt;id&gt;deploymentRepo&lt;/id&gt;</span></span><br><span class="line"><span class="comment">          &lt;username&gt;repouser&lt;/username&gt;</span></span><br><span class="line"><span class="comment">          &lt;password&gt;repopwd&lt;/password&gt;</span></span><br><span class="line"><span class="comment">        &lt;/server&gt;</span></span><br><span class="line"><span class="comment">        --&gt;</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">&lt;!-- Another sample, using keys to authenticate.</span></span><br><span class="line"><span class="comment">        &lt;server&gt;</span></span><br><span class="line"><span class="comment">          &lt;id&gt;siteServer&lt;/id&gt;</span></span><br><span class="line"><span class="comment">          &lt;privateKey&gt;/path/to/private/key&lt;/privateKey&gt;</span></span><br><span class="line"><span class="comment">          &lt;passphrase&gt;optional; leave empty if not used.&lt;/passphrase&gt;</span></span><br><span class="line"><span class="comment">        &lt;/server&gt;</span></span><br><span class="line"><span class="comment">        --&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">servers</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- 镜像 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">mirrors</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 2. 镜像地址 --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">mirror</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">id</span>&gt;</span>nexus-aliyun<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">name</span>&gt;</span>*<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">url</span>&gt;</span>http://maven.aliyun.com/nexus/content/groups/public<span class="tag">&lt;/<span class="name">url</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">mirrorOf</span>&gt;</span>central<span class="tag">&lt;/<span class="name">mirrorOf</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">mirror</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">mirrors</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- 3.多环境 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">profiles</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">profiles</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">&lt;!-- 激活环境 --&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- activeProfiles</span></span><br><span class="line"><span class="comment">       | List of profiles that are active for all builds.</span></span><br><span class="line"><span class="comment">       |</span></span><br><span class="line"><span class="comment">       --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">activeProfiles</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">activeProfile</span>&gt;</span>alwaysActiveProfile<span class="tag">&lt;/<span class="name">activeProfile</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">activeProfile</span>&gt;</span>anotherAlwaysActiveProfile<span class="tag">&lt;/<span class="name">activeProfile</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">activeProfiles</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">settings</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>​    <strong>第1处</strong>：本地仓库。默认的本地仓库地址是<code>${user.home}/.m2/repository</code>,如果需要更改，可以参考如上配置进行更改。</p>
+<p>​    <strong>第2处</strong>：镜像地址。默认是没有配置的，由于maven的中央仓库在国外，访问会比较缓慢，可以参考如上配置，配置一个国内的镜像地址，此处配置的是aliyun的镜像地址。</p>
+<p>​    <strong>第3处</strong>：设置多环境配置。这个在以后的文章里会详细总结</p>
+<hr>
+<h2 id="三、一个简单的Java程序"><a href="#三、一个简单的Java程序" class="headerlink" title="三、一个简单的Java程序"></a>三、一个简单的Java程序</h2><p><code>pom.xml</code> 定义了项目的基本配置和信息，描述了项目如何构建，声明了项目的依赖。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">project</span> <span class="attr">xmlns</span>=<span class="string">"http://maven.apache.org/POM/4.0.0"</span></span></span><br><span class="line"><span class="tag">         <span class="attr">xmlns:xsi</span>=<span class="string">"http://www.w3.org/2001/XMLSchema-instance"</span></span></span><br><span class="line"><span class="tag">         <span class="attr">xsi:schemaLocation</span>=<span class="string">"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">modelVersion</span>&gt;</span>4.0.0<span class="tag">&lt;/<span class="name">modelVersion</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>maven.demo<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>first-demo<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0-SNAPSHOT<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">project</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>第一行是 <code>xml</code> 头，指定了该文档的版本和编码格式</li>
+<li>第二行是 <code>project</code> 标签，声明了一些命名空间和xsd</li>
+<li>接下来是 <code>modelVersion</code> ,当前版本这个值固定为 <code>4.0.0</code></li>
+<li><code>groupId</code> 指定了组织或公司名称 ，比如 <code>com.google</code> ,<code>com.alibaba</code></li>
+<li><code>artifactId</code> 指定了该项目在 <code>group</code> 中的唯一id</li>
+<li><code>version</code> 指定当前项目的版本号，<code>SNAPSHOT</code> 代表该项目还在开发中，属于不稳定的版本</li>
+</ul>
+<p>这是最一个<code>pom.xml</code> 中最基本的元素。</p>
+<h4 id="编写主程序"><a href="#编写主程序" class="headerlink" title="编写主程序"></a>编写主程序</h4><p>在当前文件夹下创建 <code>src/main/java/wk/learn/maven</code> 目录，在此目录上创建<code>App.java</code> :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> wk.learn.maven;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">App</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">helloWorld</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"hello world"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="keyword">new</span> App().helloWorld());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在命令行中：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">F:\idea\learn\maven-demo&gt;mvn clean compile</span><br><span class="line">[INFO] Scanning for projects...</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] ------------------------&lt; wk.learn:maven-demo &gt;-------------------------</span><br><span class="line">[INFO] Building maven-demo 1.0-SNAPSHOT</span><br><span class="line">[INFO] --------------------------------[ jar ]---------------------------------</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ maven-demo ---</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ maven-demo ---</span><br><span class="line">[WARNING] Using platform encoding (GBK actually) to copy filtered resources, i.e. build is platform dependent!</span><br><span class="line">[INFO] Copying 0 resource</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ maven-demo ---</span><br><span class="line">[INFO] Changes detected - recompiling the module!</span><br><span class="line">[WARNING] File encoding has not been set, using platform encoding GBK, i.e. build is platform dependent!</span><br><span class="line">[INFO] Compiling 1 source file to F:\idea\learn\maven-demo\target\classes</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line">[INFO] BUILD SUCCESS</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line">[INFO] Total time: 4.220 s</span><br><span class="line">[INFO] Finished at: 2019-04-18T21:22:20+08:00</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<p>这个项目就已经编译成功了。</p>
+<h4 id="编写测试"><a href="#编写测试" class="headerlink" title="编写测试"></a>编写测试</h4><p>首先需要引入测试所依赖的jar,这里使用<code>JUnit</code></p>
+<p>在<code>pom.xml</code> 中加入：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>junit<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>junit<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>4.12<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">scope</span>&gt;</span>test<span class="tag">&lt;/<span class="name">scope</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>然后创建 <code>src/test/java/wk/learn/maven</code> 的目录，在此目录下创建 <code>AppTest.java</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> wk.learn.maven;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.junit.Assert;</span><br><span class="line"><span class="keyword">import</span> org.junit.Test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">helloTest</span><span class="params">()</span></span>&#123;</span><br><span class="line">        App app = <span class="keyword">new</span> App();</span><br><span class="line">        Assert.assertEquals(<span class="string">"hello world"</span>,app.helloWorld());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在命令行中执行：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">F:\idea\learn\maven-demo&gt;mvn clean test</span><br><span class="line">[INFO] Scanning for projects...</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] ------------------------&lt; wk.learn:maven-demo &gt;-------------------------</span><br><span class="line">[INFO] Building maven-demo 1.0-SNAPSHOT</span><br><span class="line">[INFO] --------------------------------[ jar ]---------------------------------</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ maven-demo ---</span><br><span class="line">[INFO] Deleting F:\idea\learn\maven-demo\target</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ maven-demo ---</span><br><span class="line">[WARNING] Using platform encoding (GBK actually) to copy filtered resources, i.e. build is platform dependent!</span><br><span class="line">[INFO] Copying 0 resource</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ maven-demo ---</span><br><span class="line">[INFO] Changes detected - recompiling the module!</span><br><span class="line">[WARNING] File encoding has not been set, using platform encoding GBK, i.e. build is platform dependent!</span><br><span class="line">[INFO] Compiling 1 source file to F:\idea\learn\maven-demo\target\classes</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ maven-demo ---</span><br><span class="line">[WARNING] Using platform encoding (GBK actually) to copy filtered resources, i.e. build is platform dependent!</span><br><span class="line">[INFO] skip non existing resourceDirectory F:\idea\learn\maven-demo\src\test\resources</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ maven-demo ---</span><br><span class="line">[INFO] Changes detected - recompiling the module!</span><br><span class="line">[WARNING] File encoding has not been set, using platform encoding GBK, i.e. build is platform dependent!</span><br><span class="line">[INFO] Compiling 1 source file to F:\idea\learn\maven-demo\target\test-classes</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-surefire-plugin:2.12.4:test (default-test) @ maven-demo ---</span><br><span class="line">[INFO] Surefire report directory: F:\idea\learn\maven-demo\target\surefire-reports</span><br><span class="line"></span><br><span class="line">-------------------------------------------------------</span><br><span class="line"> T E S T S</span><br><span class="line">-------------------------------------------------------</span><br><span class="line">Running wk.learn.maven.AppTest</span><br><span class="line">Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.088 sec</span><br><span class="line"></span><br><span class="line">Results :</span><br><span class="line"></span><br><span class="line">Tests run: 1, Failures: 0, Errors: 0, Skipped: 0</span><br><span class="line"></span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line">[INFO] BUILD SUCCESS</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line">[INFO] Total time: 5.160 s</span><br><span class="line">[INFO] Finished at: 2019-04-18T21:36:41+08:00</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<p>可以看到，已经编译成功并且通过了Test</p>
+<h4 id="打包"><a href="#打包" class="headerlink" title="打包"></a>打包</h4><p>执行打包命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line">F:\idea\learn\maven-demo&gt;mvn clean test</span><br><span class="line">[INFO] Scanning for projects...</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] ------------------------&lt; wk.learn:maven-demo &gt;-------------------------</span><br><span class="line">[INFO] Building maven-demo 1.0-SNAPSHOT</span><br><span class="line">[INFO] --------------------------------[ jar ]---------------------------------</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ maven-demo ---</span><br><span class="line">[INFO] Deleting F:\idea\learn\maven-demo\target</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ maven-demo ---</span><br><span class="line">[WARNING] Using platform encoding (GBK actually) to copy filtered resources, i.e. build is platform dependent!</span><br><span class="line">[INFO] Copying 0 resource</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ maven-demo ---</span><br><span class="line">[INFO] Changes detected - recompiling the module!</span><br><span class="line">[WARNING] File encoding has not been set, using platform encoding GBK, i.e. build is platform dependent!</span><br><span class="line">[INFO] Compiling 1 source file to F:\idea\learn\maven-demo\target\classes</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ maven-demo ---</span><br><span class="line">[WARNING] Using platform encoding (GBK actually) to copy filtered resources, i.e. build is platform dependent!</span><br><span class="line">[INFO] skip non existing resourceDirectory F:\idea\learn\maven-demo\src\test\resources</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ maven-demo ---</span><br><span class="line">[INFO] Changes detected - recompiling the module!</span><br><span class="line">[WARNING] File encoding has not been set, using platform encoding GBK, i.e. build is platform dependent!</span><br><span class="line">[INFO] Compiling 1 source file to F:\idea\learn\maven-demo\target\test-classes</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-surefire-plugin:2.12.4:test (default-test) @ maven-demo ---</span><br><span class="line">[INFO] Surefire report directory: F:\idea\learn\maven-demo\target\surefire-reports</span><br><span class="line"></span><br><span class="line">-------------------------------------------------------</span><br><span class="line"> T E S T S</span><br><span class="line">-------------------------------------------------------</span><br><span class="line">Running wk.learn.maven.AppTest</span><br><span class="line">Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.088 sec</span><br><span class="line"></span><br><span class="line">Results :</span><br><span class="line"></span><br><span class="line">Tests run: 1, Failures: 0, Errors: 0, Skipped: 0</span><br><span class="line"></span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line">[INFO] BUILD SUCCESS</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line">[INFO] Total time: 5.160 s</span><br><span class="line">[INFO] Finished at: 2019-04-18T21:36:41+08:00</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line"></span><br><span class="line">F:\idea\learn\maven-demo&gt;mvn package</span><br><span class="line">[INFO] Scanning for projects...</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] ------------------------&lt; wk.learn:maven-demo &gt;-------------------------</span><br><span class="line">[INFO] Building maven-demo 1.0-SNAPSHOT</span><br><span class="line">[INFO] --------------------------------[ jar ]---------------------------------</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ maven-demo ---</span><br><span class="line">[WARNING] Using platform encoding (GBK actually) to copy filtered resources, i.e. build is platform dependent!</span><br><span class="line">[INFO] Copying 0 resource</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ maven-demo ---</span><br><span class="line">[INFO] Nothing to compile - all classes are up to date</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ maven-demo ---</span><br><span class="line">[WARNING] Using platform encoding (GBK actually) to copy filtered resources, i.e. build is platform dependent!</span><br><span class="line">[INFO] skip non existing resourceDirectory F:\idea\learn\maven-demo\src\test\resources</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ maven-demo ---</span><br><span class="line">[INFO] Nothing to compile - all classes are up to date</span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-surefire-plugin:2.12.4:test (default-test) @ maven-demo ---</span><br><span class="line">[INFO] Surefire report directory: F:\idea\learn\maven-demo\target\surefire-reports</span><br><span class="line"></span><br><span class="line">-------------------------------------------------------</span><br><span class="line"> T E S T S</span><br><span class="line">-------------------------------------------------------</span><br><span class="line">Running wk.learn.maven.AppTest</span><br><span class="line">Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.105 sec</span><br><span class="line"></span><br><span class="line">Results :</span><br><span class="line"></span><br><span class="line">Tests run: 1, Failures: 0, Errors: 0, Skipped: 0</span><br><span class="line"></span><br><span class="line">[INFO]</span><br><span class="line">[INFO] --- maven-jar-plugin:2.4:jar (default-jar) @ maven-demo ---</span><br><span class="line">[INFO] Building jar: F:\idea\learn\maven-demo\target\maven-demo-1.0-SNAPSHOT.jar</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line">[INFO] BUILD SUCCESS</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br><span class="line">[INFO] Total time: 3.510 s</span><br><span class="line">[INFO] Finished at: 2019-04-18T21:41:13+08:00</span><br><span class="line">[INFO] ------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<p>通常还需要将项目安装到本地仓库中，这样别的项目就可以使用这个jar了，安装的命令是: <code>mvn install</code></p>
+<p>现在我们的项目已经成功编译，测试，打包 和安装，主要使用了:</p>
+<ul>
+<li>mvn clean compile</li>
+<li>mvn clean test</li>
+<li>mvn clean package</li>
+<li>mvn clean install</li>
+</ul>
+<hr>
+<h2 id="四、在IDEA中使用Maven"><a href="#四、在IDEA中使用Maven" class="headerlink" title="四、在IDEA中使用Maven"></a>四、在IDEA中使用Maven</h2><p>通常我们编写代码都会使用到IDE，各个IDE也都很好的集成了maven，这里介绍一下maven在IDEA中的使用和配置。</p>
+<p>IDEA中已经默认集成了maven，但我们总想做一些定制：</p>
+<p> <code>File-&gt;Settings</code> 或者使用快捷键 <code>Ctrl+Alt+s</code> 打开设置，找到 <code>Build,Execution ... -&gt; Build Tools -&gt; Maven</code></p>
+<p><img src="https://user-images.githubusercontent.com/13445354/62408444-aa4b6f80-b5fb-11e9-9139-ed2aab43c90b.png" alt="image"></p>
+<p>​    第一处：可以自己指定maven的目录,自己下载的任意版本的maven</p>
+<p>​    第二处：可以自己指定 <code>setting.xml</code> 的位置</p>
+<p>​    第三处：可以自己指定本地仓库的位置</p>
+<p>在编辑器的右侧可以打开maven 的插件，如上图</p>
+<p><img src="https://user-images.githubusercontent.com/13445354/62408454-df57c200-b5fb-11e9-9cf0-b29bc88680e0.png" alt="image"></p>
+<p>可以看到maven生命周期,插件,依赖的状况还是很方便的</p>
+<hr>
+<h2 id="五、坐标和依赖"><a href="#五、坐标和依赖" class="headerlink" title="五、坐标和依赖"></a>五、坐标和依赖</h2><blockquote>
+<p>maven 坐标为各种构件引入了秩序，任何一个构件都必须明确自己的坐标，而一组Maven坐标是通过一些元素定义的，它们是 groupId,artifactId,version,packageing,classifier等</p>
+</blockquote>
+<p>说白了,就是每个jar包在maven的仓库中的坐标都是唯一的,我们需要引入不同的jar包,直接填写其对应的坐标即可。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>cn.hutool<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hutool-all<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>4.6.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>如上, 分别指定了三个元素, <code>groupId</code> 指的是这个Jar包的公司或组织Id, <code>artifactId</code> 指的是项目名，<code>version</code> 指的就是jar包的版本号了。</p>
+<hr>
+<h2 id="六、仓库"><a href="#六、仓库" class="headerlink" title="六、仓库"></a>六、仓库</h2><p><code>Repository</code> 是Maven中的一个重要的概念,主要分为 <code>本地仓库</code> ,<code>远程仓库</code> 。</p>
+<p><code>本地仓库</code> 可以通过设置 <code>localRepository</code> 这个标签项来设置</p>
+<p><code>远程仓库</code> 默认情况下是 maven 的中央仓库,一般企业中会搭建私服来开发,这里只需理解一下远程仓库的概念。</p>
+<p>一般引入Jar包时,会先去本地仓库寻找有没有对应的jar包,如果没有就去远程仓库拉取,并保存在本地。</p>
+<hr>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/maven1/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Maven/">
+              #Maven
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/docker-mysql-1/" target="_self">Docker入门（部署MySQL）</a>
+      </div>
+    
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>
