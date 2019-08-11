@@ -8,7 +8,7 @@
   
   
   
-  <title>Maven总结（一.初识Maven） | Wangkai&#39;s blog</title>
+  <title>Maven入门指北 | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -166,7 +166,7 @@
 
 <div class="post">
   <h1 class="article-title">
-    <span>Maven总结（一.初识Maven）</span>
+    <span>Maven入门指北</span>
   </h1>
   <div class="article-top-meta">
     <span>
@@ -211,7 +211,6 @@
 <li><p>使用 Maven，我们可以轻松地将我们的项目与源代码控制系统（例如 Subversion 或 Git）集成。</p>
 </li>
 </ul>
-<hr>
 <h2 id="二、安装和配置"><a href="#二、安装和配置" class="headerlink" title="二、安装和配置"></a>二、安装和配置</h2><p><a href="http://maven.apache.org/download.cgi" target="_blank" rel="noopener">下载地址</a></p>
 <p><strong>此教程以 3.5.4版本进行，后续版本可能会有不同</strong></p>
 <hr>
@@ -276,8 +275,7 @@
 <p>​    <strong>第1处</strong>：本地仓库。默认的本地仓库地址是<code>${user.home}/.m2/repository</code>,如果需要更改，可以参考如上配置进行更改。</p>
 <p>​    <strong>第2处</strong>：镜像地址。默认是没有配置的，由于maven的中央仓库在国外，访问会比较缓慢，可以参考如上配置，配置一个国内的镜像地址，此处配置的是aliyun的镜像地址。</p>
 <p>​    <strong>第3处</strong>：设置多环境配置。这个在以后的文章里会详细总结</p>
-<hr>
-<h2 id="三、一个简单的Java程序"><a href="#三、一个简单的Java程序" class="headerlink" title="三、一个简单的Java程序"></a>三、一个简单的Java程序</h2><p><code>pom.xml</code> 定义了项目的基本配置和信息，描述了项目如何构建，声明了项目的依赖。</p>
+<h2 id="三、使用Maven构建一个简单的Java程序"><a href="#三、使用Maven构建一个简单的Java程序" class="headerlink" title="三、使用Maven构建一个简单的Java程序"></a>三、使用Maven构建一个简单的Java程序</h2><p><code>pom.xml</code> 定义了项目的基本配置和信息，描述了项目如何构建，声明了项目的依赖。</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">project</span> <span class="attr">xmlns</span>=<span class="string">"http://maven.apache.org/POM/4.0.0"</span></span></span><br><span class="line"><span class="tag">         <span class="attr">xmlns:xsi</span>=<span class="string">"http://www.w3.org/2001/XMLSchema-instance"</span></span></span><br><span class="line"><span class="tag">         <span class="attr">xsi:schemaLocation</span>=<span class="string">"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">modelVersion</span>&gt;</span>4.0.0<span class="tag">&lt;/<span class="name">modelVersion</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>maven.demo<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>first-demo<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0-SNAPSHOT<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">project</span>&gt;</span></span><br></pre></td></tr></table></figure>
 <ul>
 <li>第一行是 <code>xml</code> 头，指定了该文档的版本和编码格式</li>
@@ -311,30 +309,85 @@
 <li>mvn clean package</li>
 <li>mvn clean install</li>
 </ul>
-<hr>
 <h2 id="四、在IDEA中使用Maven"><a href="#四、在IDEA中使用Maven" class="headerlink" title="四、在IDEA中使用Maven"></a>四、在IDEA中使用Maven</h2><p>通常我们编写代码都会使用到IDE，各个IDE也都很好的集成了maven，这里介绍一下maven在IDEA中的使用和配置。</p>
 <p>IDEA中已经默认集成了maven，但我们总想做一些定制：</p>
-<p> <code>File-&gt;Settings</code> 或者使用快捷键 <code>Ctrl+Alt+s</code> 打开设置，找到 <code>Build,Execution ... -&gt; Build Tools -&gt; Maven</code></p>
+<p> <code>File-&gt;Settings</code> 或者使用快捷键 <code>Ctrl+Alt+s</code> 打开设置，找到 <code>Build,Execution ... -&gt; Build Tools -&gt; Maven</code> </p>
 <p><img src="https://user-images.githubusercontent.com/13445354/62408444-aa4b6f80-b5fb-11e9-9139-ed2aab43c90b.png" alt="image"></p>
 <p>​    第一处：可以自己指定maven的目录,自己下载的任意版本的maven</p>
 <p>​    第二处：可以自己指定 <code>setting.xml</code> 的位置</p>
 <p>​    第三处：可以自己指定本地仓库的位置</p>
-<p>在编辑器的右侧可以打开maven 的插件，如上图</p>
+<p>在编辑器的右侧可以打开maven 的插件，如下图，这个插件提供了maven 的生命周期，插件等的使用，非常方便。</p>
 <p><img src="https://user-images.githubusercontent.com/13445354/62408454-df57c200-b5fb-11e9-9cf0-b29bc88680e0.png" alt="image"></p>
-<p>可以看到maven生命周期,插件,依赖的状况还是很方便的</p>
-<hr>
 <h2 id="五、坐标和依赖"><a href="#五、坐标和依赖" class="headerlink" title="五、坐标和依赖"></a>五、坐标和依赖</h2><blockquote>
 <p>maven 坐标为各种构件引入了秩序，任何一个构件都必须明确自己的坐标，而一组Maven坐标是通过一些元素定义的，它们是 groupId,artifactId,version,packageing,classifier等</p>
 </blockquote>
 <p>说白了,就是每个jar包在maven的仓库中的坐标都是唯一的,我们需要引入不同的jar包,直接填写其对应的坐标即可。</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>cn.hutool<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>hutool-all<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>4.6.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
 <p>如上, 分别指定了三个元素, <code>groupId</code> 指的是这个Jar包的公司或组织Id, <code>artifactId</code> 指的是项目名，<code>version</code> 指的就是jar包的版本号了。</p>
-<hr>
+<h3 id="Scope"><a href="#Scope" class="headerlink" title="Scope"></a>Scope</h3><p>指的是这个Jar包的依赖范围:</p>
+<ul>
+<li><strong>Compile</strong>: 编译。如果没有指定,就会默认使用这个。对于 编译，测试，运行三种 classpath 都有效</li>
+<li><strong>Test</strong>: 测试。只对于测试 classpath 有效，在编译主代码和运行项目的时候都无效。比如 <code>Junit</code></li>
+<li><strong>Provided</strong>： 已经提供。对于 编译和测试的时候有效,但在运行时无效。比如 <code>servelet-api</code></li>
+<li><strong>System</strong> ：系统依赖。与 <code>provided</code> 类似,使用 <code>system</code> 时，必须通过 <code>systemPath</code> 指定依赖文件的路径</li>
+<li><strong>Runtime</strong>：运行时。 对于测试和运行classpath有效,但在编译主代码时无效。比如 <code>jdbc的驱动实现</code></li>
+<li><strong>Import</strong>：导入依赖。该依赖范围不会对 3种 classpath 产生实际影响，可以通过与 <code>dependencyManagement</code>标签的结合来实现依赖版本管理。比如使用 <code>spring-boot 或 spring-cloud</code> 的时候往往会引入一个 <code>bom</code> ，来管理项目种依赖的各种jar包的版本号。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Scope 依赖范围</th>
+<th>compile classpath</th>
+<th>test classpath</th>
+<th>runtime classpath</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>complie</td>
+<td>Y</td>
+<td>Y</td>
+<td>Y</td>
+<td>spring-core</td>
+</tr>
+<tr>
+<td>test</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>Junit</td>
+</tr>
+<tr>
+<td>provided</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>servlet-api</td>
+</tr>
+<tr>
+<td>runtime</td>
+<td>N</td>
+<td>Y</td>
+<td>Y</td>
+<td>jdbc驱动实现</td>
+</tr>
+<tr>
+<td>system</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>本地的,maven仓库之外的类库文件</td>
+</tr>
+</tbody>
+</table>
 <h2 id="六、仓库"><a href="#六、仓库" class="headerlink" title="六、仓库"></a>六、仓库</h2><p><code>Repository</code> 是Maven中的一个重要的概念,主要分为 <code>本地仓库</code> ,<code>远程仓库</code> 。</p>
-<p><code>本地仓库</code> 可以通过设置 <code>localRepository</code> 这个标签项来设置</p>
+<p><code>本地仓库</code> 可以通过 <code>seeting.xml</code> 中的 <code>&lt;localRepository&gt;</code> 这个标签项来设置具体路径,比如 <code>&lt;localRepository&gt;D:\maven\local_repository&lt;/localRepository&gt;</code></p>
 <p><code>远程仓库</code> 默认情况下是 maven 的中央仓库,一般企业中会搭建私服来开发,这里只需理解一下远程仓库的概念。</p>
-<p>一般引入Jar包时,会先去本地仓库寻找有没有对应的jar包,如果没有就去远程仓库拉取,并保存在本地。</p>
-<hr>
+<p>Maven查找依赖的流程是会先去本地仓库中查找，如果没有找到，就会向上去远程仓库拉取，然后将依赖缓存在本地；如果在本地找到了 。就不会再去远程仓库拉取了。</p>
+<h3 id="设置阿里云镜像"><a href="#设置阿里云镜像" class="headerlink" title="设置阿里云镜像"></a>设置阿里云镜像</h3><p>​    默认的远程仓库为 <code>maven的中央仓库</code> ，由于中央仓库的服务器在国外，我们平时下载jar包速度会很慢，可以通过 <code>setting.xml</code> 中的 <code>&lt;mirro&gt;</code> 标签来设置镜像提供加速服务。</p>
+<p>​    在 <code>setting.xml</code> 中找到 <code>&lt;mirrors&gt;</code> 标签，这个标签代表的是镜像的集合,在这个标签中添加</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> <span class="tag">&lt;<span class="name">mirror</span>&gt;</span>      </span><br><span class="line">	  <span class="tag">&lt;<span class="name">id</span>&gt;</span>nexus-aliyun<span class="tag">&lt;/<span class="name">id</span>&gt;</span>    </span><br><span class="line">	  <span class="tag">&lt;<span class="name">name</span>&gt;</span>*<span class="tag">&lt;/<span class="name">name</span>&gt;</span>  </span><br><span class="line">	  <span class="tag">&lt;<span class="name">url</span>&gt;</span>http://maven.aliyun.com/nexus/content/groups/public<span class="tag">&lt;/<span class="name">url</span>&gt;</span>    </span><br><span class="line">	  <span class="tag">&lt;<span class="name">mirrorOf</span>&gt;</span>central<span class="tag">&lt;/<span class="name">mirrorOf</span>&gt;</span>      </span><br><span class="line"><span class="tag">&lt;/<span class="name">mirror</span>&gt;</span></span><br></pre></td></tr></table></figure>
     </div>
   </div>
   
@@ -345,7 +398,7 @@
         
           本文作者 : Wang Kai <br>
         
-        原文链接 : <a href>https://blog.fantasywk.tech/passages/maven1/</a><br>
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/maven-intro/</a><br>
         版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
         </blockquote>
       </div>
