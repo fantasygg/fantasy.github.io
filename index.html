@@ -441,7 +441,11 @@
     <!-- 文章简介 -->
     <div class="article-content">
       <div class="markdown-body article-content--inner" v-html="mdToHtml(psg.summary)">
-        <p>Redis Sentinel 是 Redis官方提供的高可用解决方案。Redis本身可以实现主从复制,但是并没有自动切换主备的功能,当出现其中一个主实例宕机的情况,客户端将无法执行写入命令,Sentinel可以在没有人工干预的情况下执行故障转移,不影响正常的写入操作。Sentinel是一个分布式的系统,多个Sentinel进程之间协调工作,一来保证故障检测的误报率,二来保证了Sentinel本身的可用性。</p>
+        <blockquote>
+<p>  Redis Sentinel 是 Redis官方提供的高可用解决方案。</p>
+<p>  Redis本身可以实现主从复制,但是并没有自动切换主备的功能,当出现其中一个主实例宕机的情况,客户端将无法执行写入命令,Sentinel可以在没有人工干预的情况下执行故障转移,不影响正常的写入操作。</p>
+<p>  Sentinel是一个分布式的系统,多个Sentinel进程之间协调工作,一来保证故障检测的误报率,二来保证了Sentinel本身的可用性。</p>
+</blockquote>
       </div>
     </div>
     <div class="article-footer">
@@ -503,7 +507,10 @@
     <!-- 文章简介 -->
     <div class="article-content">
       <div class="markdown-body article-content--inner" v-html="mdToHtml(psg.summary)">
-        <p>Redis单机的吞吐是有上限的，在一些高并发业务场景下，我们需要对Redis进行扩展。例如,实现读写分离，缓解主服务器的压力。</p>
+        <blockquote>
+<p>Redis单机的吞吐是有上限的，在一些高并发业务场景下，我们需要对Redis进行扩展。</p>
+<p>例如,实现读写分离，缓解主服务器的压力。</p>
+</blockquote>
       </div>
     </div>
     <div class="article-footer">
