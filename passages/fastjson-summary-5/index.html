@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="董沅鑫, yuanxin.me@gmail.com">
+  
+  
+  
+  <title>Fastjson JSONPath | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Fastjson使用总结,Fastjson,Java,">
+  
+
+  <script>
+    console.log('\n%c Hexo-theme-bmw v4.0 ' + '%c 🎉 https://github.com/dongyuanxin/theme-bmw 🎉\n' + '\n%c View demo online ' + '%c 🔍 https://godbmw.com/ 🔍  \n' , 'color: #fadfa3; background: #030307; padding:3px 0;', '', 'color: #fadfa3; background: #030307; padding:3px 0;', '');
+  </script>
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/fantasygg">
+          
+            <a href="https://github.com/fantasygg" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Fastjson JSONPath</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-09-14
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Fastjson使用总结/">
+            Fastjson使用总结
+          </a>
+      </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h1 id="JSONPath"><a href="#JSONPath" class="headerlink" title="JSONPath"></a>JSONPath</h1><h3 id="1-JSONPath介绍"><a href="#1-JSONPath介绍" class="headerlink" title="1. JSONPath介绍"></a>1. JSONPath介绍</h3><p>fastjson 1.2.0之后的版本支持JSONPath。这是一个很强大的功能，可以在java框架中当作对象查询语言（OQL）来使用。</p>
+<h3 id="2-API"><a href="#2-API" class="headerlink" title="2. API"></a>2. API</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.alibaba.fastjson;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JSONPath</span> </span>&#123;          </span><br><span class="line">     <span class="comment">//  求值，静态方法</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">eval</span><span class="params">(Object rootObject, String path)</span></span>;</span><br><span class="line"></span><br><span class="line">     <span class="comment">//  求值，静态方法，按需计算，性能更好</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">extract</span><span class="params">(String json, String path)</span></span>;</span><br><span class="line">     </span><br><span class="line">     <span class="comment">// 计算Size，Map非空元素个数，对象非空元素个数，Collection的Size，数组的长度。其他无法求值返回-1</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">size</span><span class="params">(Object rootObject, String path)</span></span>;</span><br><span class="line">     </span><br><span class="line">     <span class="comment">// 是否包含，path中是否存在对象</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">contains</span><span class="params">(Object rootObject, String path)</span> </span>&#123; &#125;</span><br><span class="line">     </span><br><span class="line">     <span class="comment">// 是否包含，path中是否存在指定值，如果是集合或者数组，在集合中查找value是否存在</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">containsValue</span><span class="params">(Object rootObject, String path, Object value)</span> </span>&#123; &#125;</span><br><span class="line">     </span><br><span class="line">     <span class="comment">// 修改制定路径的值，如果修改成功，返回true，否则返回false</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">set</span><span class="params">(Object rootObject, String path, Object value)</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">     <span class="comment">// 在数组或者集合中添加元素</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">arrayAdd</span><span class="params">(Object rootObject, String path, Object... values)</span></span>;</span><br><span class="line">     </span><br><span class="line">     <span class="comment">// 获取，Map的KeySet，对象非空属性的名称。数组、Collection等不支持类型返回null。</span></span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">static</span> Set&lt;?&gt; keySet(Object rootObject, String path);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>建议缓存JSONPath对象，这样能够提高求值的性能。</p>
+<h4 id="extract"><a href="#extract" class="headerlink" title="extract"></a>extract</h4><p>1.2.51之后，fastjon提供了根据JSONPath快速解析JSON的API，避免原来需要先解析完再做JSONPath处理，能显著提升性能。</p>
+<h5 id="API"><a href="#API" class="headerlink" title="API"></a>API</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.alibaba.fastjson;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JSONPath</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">extract</span><span class="params">(String json, String path)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h5 id="DEMO"><a href="#DEMO" class="headerlink" title="DEMO"></a>DEMO</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">final String json = &quot;[\n&quot; +</span><br><span class="line">            &quot;   &#123;\n&quot; +</span><br><span class="line">            &quot;      \&quot;name\&quot; : \&quot;john\&quot;,\n&quot; +</span><br><span class="line">            &quot;      \&quot;gender\&quot; : \&quot;male\&quot;\n&quot; +</span><br><span class="line">            &quot;   &#125;,\n&quot; +</span><br><span class="line">            &quot;   &#123;\n&quot; +</span><br><span class="line">            &quot;      \&quot;name\&quot; : \&quot;ben\&quot;\n&quot; +</span><br><span class="line">            &quot;   &#125;\n&quot; +</span><br><span class="line">            &quot;]&quot;;</span><br><span class="line"></span><br><span class="line">String result = JSONPath.extract(json, &quot;$[0][&apos;name&apos;,&apos;gender&apos;]&quot;).toString();</span><br><span class="line">assertEquals(&quot;[\&quot;john\&quot;,\&quot;male\&quot;]&quot;, result);</span><br></pre></td></tr></table></figure>
+<h3 id="3-支持语法"><a href="#3-支持语法" class="headerlink" title="3. 支持语法"></a>3. 支持语法</h3><table>
+<thead>
+<tr>
+<th>JSONPATH</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$</td>
+<td>根对象，例如$.name</td>
+</tr>
+<tr>
+<td>[num]</td>
+<td>数组访问，其中num是数字，可以是负数。例如$[0].leader.departments[-1].name</td>
+</tr>
+<tr>
+<td>[num0,num1,num2…]</td>
+<td>数组多个元素访问，其中num是数字，可以是负数，返回数组中的多个元素。例如$[0,3,-2,5]</td>
+</tr>
+<tr>
+<td>[start:end]</td>
+<td>数组范围访问，其中start和end是开始小表和结束下标，可以是负数，返回数组中的多个元素。例如$[0:5]</td>
+</tr>
+<tr>
+<td>[start:end :step]</td>
+<td>数组范围访问，其中start和end是开始小表和结束下标，可以是负数；step是步长，返回数组中的多个元素。例如$[0:5:2]</td>
+</tr>
+<tr>
+<td>[?(key)]</td>
+<td>对象属性非空过滤，例如$.departs[?(name)]</td>
+</tr>
+<tr>
+<td>[key &gt; 123]</td>
+<td>数值类型对象属性比较过滤，例如$.departs[id &gt;= 123]，比较操作符支持=,!=,&gt;,&gt;=,&lt;,&lt;=</td>
+</tr>
+<tr>
+<td>[key = ‘123’]</td>
+<td>字符串类型对象属性比较过滤，例如$.departs[name = ‘123’]，比较操作符支持=,!=,&gt;,&gt;=,&lt;,&lt;=</td>
+</tr>
+<tr>
+<td>[key like ‘aa%’]</td>
+<td>字符串类型like过滤， 例如$.departs[name like ‘sz<em>‘]，通配符只支持%支持not like</em></td>
+</tr>
+<tr>
+<td>[key rlike ‘regexpr’]</td>
+<td>字符串类型正则匹配过滤， 例如departs[name like ‘aa(.)‘]， 正则语法为jdk的正则语法，支持not rlike</td>
+</tr>
+<tr>
+<td>[key in (‘v0’, ‘v1’)]</td>
+<td>IN过滤, 支持字符串和数值类型 例如: .departs[namein(‘wenshao′,′Yako′)].departs[namein(‘wenshao′,′Yako′)].departs[id not in (101,102)]</td>
+</tr>
+<tr>
+<td>[key between 234 and 456]</td>
+<td>BETWEEN过滤, 支持数值类型，支持not between 例如: .departs[idbetween101and201].departs[idbetween101and201].departs[id not between 101 and 201]</td>
+</tr>
+<tr>
+<td>length() 或者 size()</td>
+<td>数组长度。例如$.values.size() 支持类型java.util.Map和java.util.Collection和数组</td>
+</tr>
+<tr>
+<td>keySet()</td>
+<td>获取Map的keySet或者对象的非空属性名称。例如$.val.keySet() 支持类型：Map和普通对象 不支持：Collection和数组（返回null）</td>
+</tr>
+<tr>
+<td>.</td>
+<td>属性访问，例如$.name</td>
+</tr>
+<tr>
+<td>..</td>
+<td>deepScan属性访问，例如$..name</td>
+</tr>
+<tr>
+<td>*</td>
+<td>对象的所有属性，例如$.leader.*</td>
+</tr>
+<tr>
+<td>[‘key’]</td>
+<td>属性访问。例如$[‘name’]</td>
+</tr>
+<tr>
+<td>[‘key0’,’key1’]</td>
+<td>多个属性访问。例如$[‘id’,’name’]</td>
+</tr>
+</tbody>
+</table>
+<p>以下两种写法的语义是相同的：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$.store.book[0].title</span><br></pre></td></tr></table></figure></p>
+<p>和<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$[&apos;store&apos;][&apos;book&apos;][0][&apos;title&apos;]</span><br></pre></td></tr></table></figure></p>
+<h3 id="4-语法示例"><a href="#4-语法示例" class="headerlink" title="4. 语法示例"></a>4. 语法示例</h3><table>
+<thead>
+<tr>
+<th>JSONPath</th>
+<th>语义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$</td>
+<td>根对象</td>
+</tr>
+<tr>
+<td>$[-1]</td>
+<td>最后元素</td>
+</tr>
+<tr>
+<td>$[:-2]</td>
+<td>第1个至倒数第2个</td>
+</tr>
+<tr>
+<td>$[1:]</td>
+<td>第2个之后所有元素</td>
+</tr>
+<tr>
+<td>$[1,2,3]</td>
+<td>集合中1,2,3个元素</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-API-示例"><a href="#5-API-示例" class="headerlink" title="5. API 示例"></a>5. API 示例</h3><h4 id="5-1-例1"><a href="#5-1-例1" class="headerlink" title="5.1 例1"></a>5.1 例1</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test_entity</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">   Entity entity = <span class="keyword">new</span> Entity(<span class="number">123</span>, <span class="keyword">new</span> Object());</span><br><span class="line">   </span><br><span class="line">  Assert.assertSame(entity.getValue(), JSONPath.eval(entity, <span class="string">"$.value"</span>)); </span><br><span class="line">  Assert.assertTrue(JSONPath.contains(entity, <span class="string">"$.value"</span>));</span><br><span class="line">  Assert.assertTrue(JSONPath.containsValue(entity, <span class="string">"$.id"</span>, <span class="number">123</span>));</span><br><span class="line">  Assert.assertTrue(JSONPath.containsValue(entity, <span class="string">"$.value"</span>, entity.getValue())); </span><br><span class="line">  Assert.assertEquals(<span class="number">2</span>, JSONPath.size(entity, <span class="string">"$"</span>));</span><br><span class="line">  Assert.assertEquals(<span class="number">0</span>, JSONPath.size(<span class="keyword">new</span> Object[], <span class="string">"$"</span>)); </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Entity</span> </span>&#123;</span><br><span class="line">   <span class="keyword">private</span> Integer id;</span><br><span class="line">   <span class="keyword">private</span> String name;</span><br><span class="line">   <span class="keyword">private</span> Object value;</span><br><span class="line"></span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="title">Entity</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="title">Entity</span><span class="params">(Integer id, Object value)</span> </span>&#123; <span class="keyword">this</span>.id = id; <span class="keyword">this</span>.value = value; &#125;</span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="title">Entity</span><span class="params">(Integer id, String name)</span> </span>&#123; <span class="keyword">this</span>.id = id; <span class="keyword">this</span>.name = name; &#125;</span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="title">Entity</span><span class="params">(String name)</span> </span>&#123; <span class="keyword">this</span>.name = name; &#125;</span><br><span class="line"></span><br><span class="line">   <span class="function"><span class="keyword">public</span> Integer <span class="title">getId</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> id; &#125;</span><br><span class="line">   <span class="function"><span class="keyword">public</span> Object <span class="title">getValue</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> value; &#125;        </span><br><span class="line">   <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> name; &#125;</span><br><span class="line">   </span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setId</span><span class="params">(Integer id)</span> </span>&#123; <span class="keyword">this</span>.id = id; &#125;</span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setName</span><span class="params">(String name)</span> </span>&#123; <span class="keyword">this</span>.name = name; &#125;</span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setValue</span><span class="params">(Object value)</span> </span>&#123; <span class="keyword">this</span>.value = value; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="5-2-例2"><a href="#5-2-例2" class="headerlink" title="5.2 例2"></a>5.2 例2</h4><p>读取集合多个元素的某个属性<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Entity&gt; entities = <span class="keyword">new</span> ArrayList&lt;Entity&gt;();</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="string">"wenshao"</span>));</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="string">"ljw2083"</span>));</span><br><span class="line"></span><br><span class="line">List&lt;String&gt; names = (List&lt;String&gt;)JSONPath.eval(entities, <span class="string">"$.name"</span>); <span class="comment">// 返回enties的所有名称</span></span><br><span class="line">Assert.assertSame(entities.get(<span class="number">0</span>).getName(), names.get(<span class="number">0</span>));</span><br><span class="line">Assert.assertSame(entities.get(<span class="number">1</span>).getName(), names.get(<span class="number">1</span>));</span><br></pre></td></tr></table></figure></p>
+<h4 id="5-3-例3"><a href="#5-3-例3" class="headerlink" title="5.3 例3"></a>5.3 例3</h4><p>返回集合中多个元素<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Entity&gt; entities = <span class="keyword">new</span> ArrayList&lt;Entity&gt;();</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="string">"wenshao"</span>));</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="string">"ljw2083"</span>));</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="string">"Yako"</span>));</span><br><span class="line"></span><br><span class="line">List&lt;Entity&gt; result = (List&lt;Entity&gt;)JSONPath.eval(entities, <span class="string">"[1,2]"</span>); <span class="comment">// 返回下标为1和2的元素</span></span><br><span class="line">Assert.assertEquals(<span class="number">2</span>, result.size());</span><br><span class="line">Assert.assertSame(entities.get(<span class="number">1</span>), result.get(<span class="number">0</span>));</span><br><span class="line">Assert.assertSame(entities.get(<span class="number">2</span>), result.get(<span class="number">1</span>));</span><br></pre></td></tr></table></figure></p>
+<h4 id="5-4-例4"><a href="#5-4-例4" class="headerlink" title="5.4 例4"></a>5.4 例4</h4><p>按范围返回集合的子集<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Entity&gt; entities = <span class="keyword">new</span> ArrayList&lt;Entity&gt;();</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="string">"wenshao"</span>));</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="string">"ljw2083"</span>));</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="string">"Yako"</span>));</span><br><span class="line"></span><br><span class="line">List&lt;Entity&gt; result = (List&lt;Entity&gt;)JSONPath.eval(entities, <span class="string">"[0:2]"</span>); <span class="comment">// 返回下标从0到2的元素</span></span><br><span class="line">Assert.assertEquals(<span class="number">3</span>, result.size());</span><br><span class="line">Assert.assertSame(entities.get(<span class="number">0</span>), result.get(<span class="number">0</span>));</span><br><span class="line">Assert.assertSame(entities.get(<span class="number">1</span>), result.get(<span class="number">1</span>));</span><br><span class="line">Assert.assertSame(entities.get(<span class="number">2</span>), result.get(<span class="number">1</span>));</span><br></pre></td></tr></table></figure></p>
+<h4 id="5-5-例5"><a href="#5-5-例5" class="headerlink" title="5.5 例5"></a>5.5 例5</h4><p>通过条件过滤，返回集合的子集<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Entity&gt; entities = <span class="keyword">new</span> ArrayList&lt;Entity&gt;();</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="number">1001</span>, <span class="string">"ljw2083"</span>));</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="number">1002</span>, <span class="string">"wenshao"</span>));</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="number">1003</span>, <span class="string">"yakolee"</span>));</span><br><span class="line">entities.add(<span class="keyword">new</span> Entity(<span class="number">1004</span>, <span class="keyword">null</span>));</span><br><span class="line"></span><br><span class="line">List&lt;Object&gt; result = (List&lt;Object&gt;) JSONPath.eval(entities, <span class="string">"[id in (1001)]"</span>);</span><br><span class="line">Assert.assertEquals(<span class="number">1</span>, result.size());</span><br><span class="line">Assert.assertSame(entities.get(<span class="number">0</span>), result.get(<span class="number">0</span>));</span><br></pre></td></tr></table></figure></p>
+<h4 id="5-6-例6"><a href="#5-6-例6" class="headerlink" title="5.6 例6"></a>5.6 例6</h4><p>根据属性值过滤条件判断是否返回对象，修改对象，数组属性添加元素<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Entity entity = <span class="keyword">new</span> Entity(<span class="number">1001</span>, <span class="string">"ljw2083"</span>);</span><br><span class="line">Assert.assertSame(entity , JSONPath.eval(entity, <span class="string">"[id = 1001]"</span>));</span><br><span class="line">Assert.assertNull(JSONPath.eval(entity, <span class="string">"[id = 1002]"</span>));</span><br><span class="line"></span><br><span class="line">JSONPath.set(entity, <span class="string">"id"</span>, <span class="number">123456</span>); <span class="comment">//将id字段修改为123456</span></span><br><span class="line">Assert.assertEquals(<span class="number">123456</span>, entity.getId().intValue());</span><br><span class="line"></span><br><span class="line">JSONPath.set(entity, <span class="string">"value"</span>, <span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">0</span>]); <span class="comment">//将value字段赋值为长度为0的数组</span></span><br><span class="line">JSONPath.arrayAdd(entity, <span class="string">"value"</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>); <span class="comment">//将value字段的数组添加元素1,2,3</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="5-7-例7"><a href="#5-7-例7" class="headerlink" title="5.7 例7"></a>5.7 例7</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Map root = Collections.singletonMap(<span class="string">"company"</span>, <span class="comment">//</span></span><br><span class="line">                                    Collections.singletonMap(<span class="string">"departs"</span>, <span class="comment">//</span></span><br><span class="line">                                                             Arrays.asList( <span class="comment">//</span></span><br><span class="line">                                                                            Collections.singletonMap(<span class="string">"id"</span>,</span><br><span class="line">                                                                                                     <span class="number">1001</span>), <span class="comment">//</span></span><br><span class="line">                                                                            Collections.singletonMap(<span class="string">"id"</span>,</span><br><span class="line">                                                                                                     <span class="number">1002</span>), <span class="comment">//</span></span><br><span class="line">                                                                            Collections.singletonMap(<span class="string">"id"</span>, <span class="number">1003</span>) <span class="comment">//</span></span><br><span class="line">                                                             ) <span class="comment">//</span></span><br><span class="line">                                    ));</span><br><span class="line"></span><br><span class="line">List&lt;Object&gt; ids = (List&lt;Object&gt;) JSONPath.eval(root, <span class="string">"$..id"</span>);</span><br><span class="line">assertEquals(<span class="number">3</span>, ids.size());</span><br><span class="line">assertEquals(<span class="number">1001</span>, ids.get(<span class="number">0</span>));</span><br><span class="line">assertEquals(<span class="number">1002</span>, ids.get(<span class="number">1</span>));</span><br><span class="line">assertEquals(<span class="number">1003</span>, ids.get(<span class="number">2</span>));</span><br></pre></td></tr></table></figure>
+<h4 id="5-8-例8-keySet"><a href="#5-8-例8-keySet" class="headerlink" title="5.8 例8 keySet"></a>5.8 例8 keySet</h4><p>使用keySet抽取对象的属性名，null值属性的名字并不包含在keySet结果中，使用时需要注意，详细可参考示例。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">Entity e = <span class="keyword">new</span> Entity();</span><br><span class="line">e.setId(<span class="keyword">null</span>);</span><br><span class="line">e.setName(<span class="string">"hello"</span>);</span><br><span class="line">Map&lt;String, Entity&gt; map = Collections.singletonMap(<span class="string">"e"</span>, e);</span><br><span class="line">Collection&lt;String&gt; result;</span><br><span class="line"></span><br><span class="line"><span class="comment">// id is null, excluded by keySet</span></span><br><span class="line">result = (Collection&lt;String&gt;)JSONPath.eval(map, <span class="string">"$.e.keySet()"</span>);</span><br><span class="line">assertEquals(<span class="number">1</span>, result.size());</span><br><span class="line">Assert.assertTrue(result.contains(<span class="string">"name"</span>));</span><br><span class="line"></span><br><span class="line">e.setId(<span class="number">1L</span>);</span><br><span class="line">result = (Collection&lt;String&gt;)JSONPath.eval(map, <span class="string">"$.e.keySet()"</span>);</span><br><span class="line">Assert.assertEquals(<span class="number">2</span>, result.size());</span><br><span class="line">Assert.assertTrue(result.contains(<span class="string">"id"</span>)); <span class="comment">// included</span></span><br><span class="line">Assert.assertTrue(result.contains(<span class="string">"name"</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">// Same result</span></span><br><span class="line">Assert.assertEquals(result, JSONPath.keySet(map, <span class="string">"$.e"</span>));</span><br><span class="line">Assert.assertEquals(result, <span class="keyword">new</span> JSONPath(<span class="string">"$.e"</span>).keySet(map));</span><br></pre></td></tr></table></figure>
+<hr>
+<p>转自：<a href="https://github.com/alibaba/fastjson/wiki/JSONPath" target="_blank" rel="noopener">fastjson-wiki-JSONPath</a></p>
+<p><a href="https://github.com/alibaba/fastjson/wiki/JSONPath_Extract" target="_blank" rel="noopener">fastjson-wiki-JSONPath-extract</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/fastjson-summary-5/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Fastjson/">
+              #Fastjson
+            </a>
+          </span>
+          
+          <span class="span--tag">
+            <a href="/tags/Java/">
+              #Java
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/fastjson-summary-1/" target="_self">Fastjson 常用API</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/fastjson-summary-6/" target="_self">Fastjson JSONField</a>
+        <i class="iconfont icon-next"></i>
+      </div>
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>

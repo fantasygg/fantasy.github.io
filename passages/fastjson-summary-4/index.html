@@ -8,12 +8,12 @@
   
   
   
-  <title>归档: 2019/8 | Wangkai&#39;s blog</title>
+  <title>Fastjson 支持非public字段 | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Hexo, theme-bmw">
+    <meta name="keywords" content="Fastjson使用总结,Fastjson,Java,">
   
 
   <script>
@@ -151,43 +151,128 @@
   })
 </script>
 
-      <div class="container">
-  <div class="timeline">
-  <span class="archive-move-on"></span>
-  <span class="archive-page-counter">
-    
-      <span>Wow! 一共有 18 篇文章</span>
-    
-  </span>
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Fastjson 支持非public字段</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-09-14
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Fastjson使用总结/">
+            Fastjson使用总结
+          </a>
+      </span>
+    
+    
+  </div>
+
   
-    <div class="collection-title">
-      <h2>
-        <span>2019</span>
-      </h2>
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h1 id="支持非public-字段"><a href="#支持非public-字段" class="headerlink" title="支持非public 字段"></a>支持非public 字段</h1><h2 id="NonPublicField"><a href="#NonPublicField" class="headerlink" title="NonPublicField"></a>NonPublicField</h2><p>在某些场景下，反序列化需要支持NonPublicField，在1.2.22 &amp; 1.1.54.android之后提供了相应的支持。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Model</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> id;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Model model = JSON.parseObject(<span class="string">"&#123;\"id\":123&#125;"</span></span><br><span class="line">                                , Model.class</span><br><span class="line">                                , Feature.SupportNonPublicField);</span><br><span class="line">assertEquals(<span class="number">123</span>, model.id);</span><br></pre></td></tr></table></figure>
+<h2 id="fieldBased"><a href="#fieldBased" class="headerlink" title="fieldBased"></a>fieldBased</h2><p>在1.2.31版本中，fastjson引入了对fieldBased序列化和反序列化的支持。在SerializeConfig和ParserConfig上配置是否fieldBased。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">boolean</span> fieldBased = <span class="keyword">true</span>;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> SerializeConfig serializeConfig = <span class="keyword">new</span> SerializeConfig(fieldBased);</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> ParserConfig parserConfig = <span class="keyword">new</span> ParserConfig(fieldBased);</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Model</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> id;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Model model = <span class="keyword">new</span> Model();</span><br><span class="line">model.id = <span class="number">123</span>;</span><br><span class="line">assertEquals(<span class="string">"&#123;\"id\":123&#125;"</span>, JSON.toJSONString(model, serializeConfig));</span><br><span class="line"></span><br><span class="line">Model model2 = JSON.parseObject(<span class="string">"&#123;\"id\":123&#125;"</span>, Model.class, parserConfig);</span><br><span class="line">assertEquals(model.id, model2.id);</span><br></pre></td></tr></table></figure>
+<hr>
+<p>转自：<a href="https://github.com/alibaba/fastjson/wiki/Feature_SupportNonPublicField_cn" target="_blank" rel="noopener">fastjson-wiki-NonPublicField</a></p>
+<p><a href="https://github.com/alibaba/fastjson/wiki/Based_On_Fields_cn" target="_blank" rel="noopener">fastjson-wiki-base_on_fields</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/fastjson-summary-4/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
     </div>
   
   
   
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/maven-intro/">
-          <span>Maven入门指北</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        08-03
-      </div>
-    </header>
-  </article>
+
   
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Fastjson/">
+              #Fastjson
+            </a>
+          </span>
+          
+          <span class="span--tag">
+            <a href="/tags/Java/">
+              #Java
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
 </div>
-  <nav class="page-navigation">
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
     
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/fastjson-summary-6/" target="_self">Fastjson JSONField</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/fastjson-summary-3/" target="_self">Fastjson 输入输出空值</a>
+        <i class="iconfont icon-next"></i>
+      </div>
     
   </nav>
+
+   
+
+   
+
 </div>
+
 
       <footer>
   <p class="site-info">

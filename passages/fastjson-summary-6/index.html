@@ -8,12 +8,12 @@
   
   
   
-  <title>归档: 2019/8 | Wangkai&#39;s blog</title>
+  <title>Fastjson JSONField | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Hexo, theme-bmw">
+    <meta name="keywords" content="Fastjson使用总结,Fastjson,Java,">
   
 
   <script>
@@ -151,43 +151,190 @@
   })
 </script>
 
-      <div class="container">
-  <div class="timeline">
-  <span class="archive-move-on"></span>
-  <span class="archive-page-counter">
-    
-      <span>Wow! 一共有 18 篇文章</span>
-    
-  </span>
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Fastjson JSONField</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-09-14
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Fastjson使用总结/">
+            Fastjson使用总结
+          </a>
+      </span>
+    
+    
+  </div>
+
   
-    <div class="collection-title">
-      <h2>
-        <span>2019</span>
-      </h2>
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="1-JSONField-介绍"><a href="#1-JSONField-介绍" class="headerlink" title="1. JSONField 介绍"></a>1. JSONField 介绍</h2><p>注意：1、若属性是私有的，必须有set*方法。否则无法反序列化。</p>
+<pre><code>package com.alibaba.fastjson.annotation;
+
+public @interface JSONField {
+    // 配置序列化和反序列化的顺序，1.1.42版本之后才支持
+    int ordinal() default 0;
+
+     // 指定字段的名称
+    String name() default &quot;&quot;;
+
+    // 指定字段的格式，对日期格式有用
+    String format() default &quot;&quot;;
+
+    // 是否序列化
+    boolean serialize() default true;
+
+    // 是否反序列化
+    boolean deserialize() default true;
+}
+</code></pre><hr>
+<h2 id="2-JSONField配置方式"><a href="#2-JSONField配置方式" class="headerlink" title="2. JSONField配置方式"></a>2. JSONField配置方式</h2><p>FieldInfo可以配置在getter/setter方法或者字段上。例如：</p>
+<h3 id="2-1-配置在getter-setter上"><a href="#2-1-配置在getter-setter上" class="headerlink" title="2.1 配置在getter/setter上"></a>2.1 配置在getter/setter上</h3><pre><code>public class A {
+     private int id;
+
+     @JSONField(name=&quot;ID&quot;)
+     public int getId() {return id;}
+     @JSONField(name=&quot;ID&quot;)
+     public void setId(int value) {this.id = id;}
+}
+</code></pre><h3 id="2-2-配置在field上"><a href="#2-2-配置在field上" class="headerlink" title="2.2 配置在field上"></a>2.2 配置在field上</h3><pre><code>public class A {
+     @JSONField(name=&quot;ID&quot;)
+     private int id;
+
+     public int getId() {return id;}
+     public void setId(int value) {this.id = id;}
+}
+</code></pre><hr>
+<h2 id="3-使用format配置日期格式化"><a href="#3-使用format配置日期格式化" class="headerlink" title="3. 使用format配置日期格式化"></a>3. 使用format配置日期格式化</h2><pre><code>public class A {
+     // 配置date序列化和反序列使用yyyyMMdd日期格式
+     @JSONField(format=&quot;yyyyMMdd&quot;)
+     public Date date;
+}
+</code></pre><hr>
+<h2 id="4-使用serialize-deserialize指定字段不序列化"><a href="#4-使用serialize-deserialize指定字段不序列化" class="headerlink" title="4. 使用serialize/deserialize指定字段不序列化"></a>4. 使用serialize/deserialize指定字段不序列化</h2><pre><code>public class A {
+     @JSONField(serialize=false)
+     public Date date;
+}
+
+public class A {
+     @JSONField(deserialize=false)
+     public Date date;
+}
+</code></pre><hr>
+<h2 id="5-使用ordinal指定字段的顺序"><a href="#5-使用ordinal指定字段的顺序" class="headerlink" title="5. 使用ordinal指定字段的顺序"></a>5. 使用ordinal指定字段的顺序</h2><p>缺省fastjson序列化一个java bean，是根据fieldName的字母序进行序列化的，你可以通过ordinal指定字段的顺序。这个特性需要1.1.42以上版本。</p>
+<pre><code>public static class VO {
+    @JSONField(ordinal = 3)
+    private int f0;
+
+    @JSONField(ordinal = 2)
+    private int f1;
+
+    @JSONField(ordinal = 1)
+    private int f2;
+}
+</code></pre><hr>
+<h2 id="6-使用serializeUsing制定属性的序列化类"><a href="#6-使用serializeUsing制定属性的序列化类" class="headerlink" title="6. 使用serializeUsing制定属性的序列化类"></a>6. 使用serializeUsing制定属性的序列化类</h2><p>在fastjson 1.2.16版本之后，JSONField支持新的定制化配置serializeUsing，可以单独对某一个类的某个属性定制序列化，比如：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Model</span> </span>&#123;</span><br><span class="line">    <span class="meta">@JSONField</span>(serializeUsing = ModelValueSerializer.class)</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> value;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ModelValueSerializer</span> <span class="keyword">implements</span> <span class="title">ObjectSerializer</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">write</span><span class="params">(JSONSerializer serializer, Object object, Object fieldName, Type fieldType,</span></span></span><br><span class="line"><span class="function"><span class="params">                      <span class="keyword">int</span> features)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        Integer value = (Integer) object;</span><br><span class="line">        String text = value + <span class="string">"元"</span>;</span><br><span class="line">        serializer.write(text);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>测试代码<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Model model = <span class="keyword">new</span> Model();</span><br><span class="line">model.value = <span class="number">100</span>;</span><br><span class="line">String json = JSON.toJSONString(model);</span><br><span class="line">Assert.assertEquals(<span class="string">"&#123;\"value\":\"100元\"&#125;"</span>, json);</span><br></pre></td></tr></table></figure></p>
+<hr>
+<p>转自：<a href="https://github.com/alibaba/fastjson/wiki/JSONField" target="_blank" rel="noopener">fastjson-wiki</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/fastjson-summary-6/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
     </div>
   
   
   
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/maven-intro/">
-          <span>Maven入门指北</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        08-03
-      </div>
-    </header>
-  </article>
+
   
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Fastjson/">
+              #Fastjson
+            </a>
+          </span>
+          
+          <span class="span--tag">
+            <a href="/tags/Java/">
+              #Java
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
 </div>
-  <nav class="page-navigation">
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
     
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/fastjson-summary-5/" target="_self">Fastjson JSONPath</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/fastjson-summary-4/" target="_self">Fastjson 支持非public字段</a>
+        <i class="iconfont icon-next"></i>
+      </div>
     
   </nav>
+
+   
+
+   
+
 </div>
+
 
       <footer>
   <p class="site-info">

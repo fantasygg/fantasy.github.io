@@ -8,12 +8,12 @@
   
   
   
-  <title>归档: 2019/8 | Wangkai&#39;s blog</title>
+  <title>Fastjson 循环引用 | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Hexo, theme-bmw">
+    <meta name="keywords" content="Fastjson使用总结,Fastjson,Java,">
   
 
   <script>
@@ -151,43 +151,154 @@
   })
 </script>
 
-      <div class="container">
-  <div class="timeline">
-  <span class="archive-move-on"></span>
-  <span class="archive-page-counter">
-    
-      <span>Wow! 一共有 18 篇文章</span>
-    
-  </span>
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Fastjson 循环引用</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-09-14
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Fastjson使用总结/">
+            Fastjson使用总结
+          </a>
+      </span>
+    
+    
+  </div>
+
   
-    <div class="collection-title">
-      <h2>
-        <span>2019</span>
-      </h2>
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="关闭引用支持"><a href="#关闭引用支持" class="headerlink" title="关闭引用支持"></a>关闭引用支持</h2><p>当序列化后的JSON传输到浏览器或者其他语言中，这些json解析器不支持循环引用，从而导致数据丢失。你可以关闭fastjson的循环引用支持。关闭引用检测，还能够提升序列化时的性能。</p>
+<p><strong>全局配置关闭</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JSON.DEFAULT_GENERATE_FEATURE |= SerializerFeature.DisableCircularReferenceDetect.getMask();</span><br></pre></td></tr></table></figure>
+<p><strong>非全局关闭</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JSON.toJSONString(obj, SerializerFeature.DisableCircularReferenceDetect);</span><br></pre></td></tr></table></figure>
+<h3 id="当对象存在引用时，序列化后的结果浏览器不支持，怎么办？"><a href="#当对象存在引用时，序列化后的结果浏览器不支持，怎么办？" class="headerlink" title="当对象存在引用时，序列化后的结果浏览器不支持，怎么办？"></a>当对象存在引用时，序列化后的结果浏览器不支持，怎么办？</h3><p>使用 <code>SerializerFeature.DisableCircularReferenceDetect</code> 特性关闭引用检测和生成。例如：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String  jsonString = JSON.toJSONString(obj, SerializerFeature.DisableCircularReferenceDetect);</span><br></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h2><table>
+<thead>
+<tr>
+<th>语法</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{&quot;$ref&quot;:&quot;$&quot;}</code></td>
+<td>引用根对象</td>
+</tr>
+<tr>
+<td><code>{&quot;$ref&quot;:&quot;@&quot;}</code></td>
+<td>引用自己</td>
+</tr>
+<tr>
+<td><code>{&quot;$ref&quot;:&quot;..&quot;}</code></td>
+<td>引用父对象</td>
+</tr>
+<tr>
+<td><code>{&quot;$ref&quot;:&quot;../..&quot;}</code></td>
+<td>引用父对象的父对象</td>
+</tr>
+<tr>
+<td><code>{&quot;$ref&quot;:&quot;$.members[0].reportTo&quot;}</code></td>
+<td>基于路径的引用</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p>转自：<a href="https://github.com/alibaba/fastjson/wiki/循环引用" target="_blank" rel="noopener">fastjson-wiki</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/fastjson-summary-2/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
     </div>
   
   
   
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/maven-intro/">
-          <span>Maven入门指北</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        08-03
-      </div>
-    </header>
-  </article>
+
   
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Fastjson/">
+              #Fastjson
+            </a>
+          </span>
+          
+          <span class="span--tag">
+            <a href="/tags/Java/">
+              #Java
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
 </div>
-  <nav class="page-navigation">
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/fastjson-summary-3/" target="_self">Fastjson 输入输出空值</a>
+      </div>
     
     
   </nav>
+
+   
+
+   
+
 </div>
+
 
       <footer>
   <p class="site-info">

@@ -8,12 +8,12 @@
   
   
   
-  <title>归档: 2019/8 | Wangkai&#39;s blog</title>
+  <title>Fastjson 常用API | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Hexo, theme-bmw">
+    <meta name="keywords" content="Fastjson使用总结,Fastjson,Java,">
   
 
   <script>
@@ -151,43 +151,130 @@
   })
 </script>
 
-      <div class="container">
-  <div class="timeline">
-  <span class="archive-move-on"></span>
-  <span class="archive-page-counter">
-    
-      <span>Wow! 一共有 18 篇文章</span>
-    
-  </span>
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Fastjson 常用API</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-09-13
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Fastjson使用总结/">
+            Fastjson使用总结
+          </a>
+      </span>
+    
+    
+  </div>
+
   
-    <div class="collection-title">
-      <h2>
-        <span>2019</span>
-      </h2>
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h3 id="Fastjson-parse-Tree"><a href="#Fastjson-parse-Tree" class="headerlink" title="Fastjson parse Tree"></a>Fastjson parse Tree</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.*;</span><br><span class="line"></span><br><span class="line">JSONObject jsonObj = JSON.parseObject(jsonStr);</span><br></pre></td></tr></table></figure>
+<h3 id="Fastjson-parse-POJO"><a href="#Fastjson-parse-POJO" class="headerlink" title="Fastjson parse POJO"></a>Fastjson parse POJO</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.JSON;</span><br><span class="line"></span><br><span class="line">Model model = JSON.parseObject(jsonStr, Model.class);</span><br></pre></td></tr></table></figure>
+<h3 id="Fastjson-parse-POJO-Generic"><a href="#Fastjson-parse-POJO-Generic" class="headerlink" title="Fastjson parse POJO Generic"></a>Fastjson parse POJO Generic</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.JSON;</span><br><span class="line"></span><br><span class="line">Type type = <span class="keyword">new</span> TypeReference&lt;List&lt;Model&gt;&gt;() &#123;&#125;.getType(); </span><br><span class="line">List&lt;Model&gt; list = JSON.parseObject(jsonStr, type);</span><br></pre></td></tr></table></figure>
+<h3 id="Fastjson-convert-POJO-to-json-string"><a href="#Fastjson-convert-POJO-to-json-string" class="headerlink" title="Fastjson convert POJO to json string"></a>Fastjson convert POJO to json string</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.JSON;</span><br><span class="line"></span><br><span class="line">Model model = ...; </span><br><span class="line">String jsonStr = JSON.toJSONString(model);</span><br></pre></td></tr></table></figure>
+<h3 id="Fastjson-convert-POJO-to-json-bytes"><a href="#Fastjson-convert-POJO-to-json-bytes" class="headerlink" title="Fastjson convert POJO to json bytes"></a>Fastjson convert POJO to json bytes</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.JSON;</span><br><span class="line"></span><br><span class="line">Model model = ...; </span><br><span class="line"><span class="keyword">byte</span>[] jsonBytes = JSON.toJSONBytes(model);</span><br></pre></td></tr></table></figure>
+<h3 id="Fastjson-write-POJO-as-json-string-to-OutputStream"><a href="#Fastjson-write-POJO-as-json-string-to-OutputStream" class="headerlink" title="Fastjson write POJO as json string to OutputStream"></a>Fastjson write POJO as json string to OutputStream</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.JSON;</span><br><span class="line"></span><br><span class="line">Model model = ...; </span><br><span class="line">OutputStream os;</span><br><span class="line">JSON.writeJSONString(os, model);</span><br></pre></td></tr></table></figure>
+<h3 id="Fastjson-write-POJO-as-json-string-to-Writer"><a href="#Fastjson-write-POJO-as-json-string-to-Writer" class="headerlink" title="Fastjson write POJO as json string to Writer"></a>Fastjson write POJO as json string to Writer</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.JSON;</span><br><span class="line"></span><br><span class="line">Model model = ...; </span><br><span class="line">Writer writer = ...;</span><br><span class="line">JSON.writeJSONString(writer, model);</span><br></pre></td></tr></table></figure>
+<hr>
+<p>转自: <a href="https://github.com/alibaba/fastjson/wiki/JSON_API_cn" target="_blank" rel="noopener">fastjson-wiki</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://blog.fantasywk.tech/passages/fastjson-summary-1/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
     </div>
   
   
   
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/maven-intro/">
-          <span>Maven入门指北</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        08-03
-      </div>
-    </header>
-  </article>
+
   
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Fastjson/">
+              #Fastjson
+            </a>
+          </span>
+          
+          <span class="span--tag">
+            <a href="/tags/Java/">
+              #Java
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
 </div>
-  <nav class="page-navigation">
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
     
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/maven-intro/" target="_self">Maven入门指北</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/fastjson-summary-5/" target="_self">Fastjson JSONPath</a>
+        <i class="iconfont icon-next"></i>
+      </div>
     
   </nav>
+
+   
+
+   
+
 </div>
+
 
       <footer>
   <p class="site-info">
