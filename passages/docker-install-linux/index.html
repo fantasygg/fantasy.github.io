@@ -8,12 +8,12 @@
   
   
   
-  <title>归档: 2019/9 | Wangkai&#39;s blog</title>
+  <title>Docker入门（CentOS下安装） | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Hexo, theme-bmw">
+    <meta name="keywords" content="Docker入门,Docker,">
   
 
   
@@ -147,113 +147,149 @@
   })
 </script>
 
-      <div class="container">
-  <div class="timeline">
-  <span class="archive-move-on"></span>
-  <span class="archive-page-counter">
-    
-      <span>Wow! 一共有 19 篇文章</span>
-    
-  </span>
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Docker入门（CentOS下安装）</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-11-16
+    </span>
+    
+      <span>
+        分类 : 
+          <a href="/categories/Docker入门/">
+            Docker入门
+          </a>
+      </span>
+    
+    
+  </div>
+
   
-    <div class="collection-title">
-      <h2>
-        <span>2019</span>
-      </h2>
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h1 id="docker-安装"><a href="#docker-安装" class="headerlink" title="docker 安装"></a>docker 安装</h1><h2 id="CentOS"><a href="#CentOS" class="headerlink" title="CentOS"></a>CentOS</h2><p><strong>先卸载掉旧版本</strong>，以防止后续操作出现问题，如果确定系统中没有安装，可以跳过这一步</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">sudo yum remove docker \</span><br><span class="line">                  docker-client \</span><br><span class="line">                  docker-client-latest \</span><br><span class="line">                  docker-common \</span><br><span class="line">                  docker-latest \</span><br><span class="line">                  docker-latest-logrotate \</span><br><span class="line">                  docker-logrotate \</span><br><span class="line">                  docker-engine</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="第一种方式：使用Docker-仓库安装"><a href="#第一种方式：使用Docker-仓库安装" class="headerlink" title="第一种方式：使用Docker 仓库安装"></a>第一种方式：使用Docker 仓库安装</h3><ol>
+<li><p>安装依赖包</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo yum install -y yum-utils \</span><br><span class="line">  device-mapper-persistent-data \</span><br><span class="line">  lvm2</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>设置稳定版本的仓库</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo yum-config-manager \</span><br><span class="line">    --add-repo \</span><br><span class="line">    https://download.docker.com/linux/centos/docker-ce.repo</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum install docker-ce docker-ce-cli containerd.io</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动docker</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>验证安装</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo docker run hello-world</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<hr>
+<h3 id="第二种方式：使用安装包"><a href="#第二种方式：使用安装包" class="headerlink" title="第二种方式：使用安装包"></a>第二种方式：使用安装包</h3><ol>
+<li><p>去  <a href="https://download.docker.com/linux/centos/7/x86_64/stable/Packages/" target="_blank" rel="noopener">https://download.docker.com/linux/centos/7/x86_64/stable/Packages/</a>  下载安装包 <code>.rpm</code></p>
+</li>
+<li><p>安装</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo yum install /path/to/package.rpm</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>启动docker</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>验证安装</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo docker run hello-world</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<hr>
+<h3 id="第三种方式：使用脚本安装"><a href="#第三种方式：使用脚本安装" class="headerlink" title="第三种方式：使用脚本安装"></a>第三种方式：使用脚本安装</h3><p>执行下面的命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -fsSL https://get.docker.com -o get-docker.sh</span><br><span class="line">sudo sh get-docker.sh</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="将非root用户添加到“-docker”组"><a href="#将非root用户添加到“-docker”组" class="headerlink" title="将非root用户添加到“ docker”组"></a>将非root用户添加到“ docker”组</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo usermod -aG docker your-user</span><br></pre></td></tr></table></figure>
+<hr>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://kevinwang0224.github.io/passages/docker-install-linux/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
     </div>
   
   
   
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/fastjson-summary-2/">
-          <span>Fastjson 循环引用</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        09-14
-      </div>
-    </header>
-  </article>
+
   
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/fastjson-summary-3/">
-          <span>Fastjson 输入输出空值</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        09-14
-      </div>
-    </header>
-  </article>
-  
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/fastjson-summary-4/">
-          <span>Fastjson 支持非public字段</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        09-14
-      </div>
-    </header>
-  </article>
-  
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/fastjson-summary-6/">
-          <span>Fastjson JSONField</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        09-14
-      </div>
-    </header>
-  </article>
-  
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/fastjson-summary-5/">
-          <span>Fastjson JSONPath</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        09-14
-      </div>
-    </header>
-  </article>
-  
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/fastjson-summary-1/">
-          <span>Fastjson 常用API</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        09-13
-      </div>
-    </header>
-  </article>
-  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Docker/">
+              #Docker
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
 </div>
-  <nav class="page-navigation">
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/fastjson-summary-2/" target="_self">Fastjson 循环引用</a>
+      </div>
     
     
   </nav>
+
+   
+
+   
+
 </div>
+
 
       <footer>
   <p class="site-info">
