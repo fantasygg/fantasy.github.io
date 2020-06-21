@@ -8,12 +8,12 @@
   
   
   
-  <title>归档: 2019/4 | Wangkai&#39;s blog</title>
+  <title>使用阿里云OSS搭建图床 | Wangkai&#39;s blog</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="Hexo, theme-bmw">
+    <meta name="keywords" content="Markdown,">
   
 
   
@@ -147,71 +147,134 @@
   })
 </script>
 
-      <div class="container">
-  <div class="timeline">
-  <span class="archive-move-on"></span>
-  <span class="archive-page-counter">
-    
-      <span>Wow! 一共有 22 篇文章</span>
-    
-  </span>
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
+
+<div class="post">
+  <h1 class="article-title">
+    <span>使用阿里云OSS搭建图床</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2020-06-21
+    </span>
+    
+    
+  </div>
+
   
-    <div class="collection-title">
-      <h2>
-        <span>2019</span>
-      </h2>
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="在阿里云创建bucket"><a href="#在阿里云创建bucket" class="headerlink" title="在阿里云创建bucket"></a>在阿里云创建bucket</h2><p>进入阿里云控制台，如果没有开通对象存储 ，需要先进行开通 （开通不收费，使用才收费）, 进入对象存储的配置中，选择 bucket列表 -&gt; 创建Bucket  ，配置调整如下：（读写权限 需要调整 公共读）</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621190046231.png" alt="image-20200621190046231" style="zoom:50%;"></p>
+<p>如果有自己的域名，可以通过绑定自己的域名访问 </p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621190616633.png" alt="image-20200621190616633" style="zoom:50%;"></p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621190643546.png" alt="image-20200621190643546" style="zoom:50%;"></p>
+<h2 id="获取AccessKey-SecretKey"><a href="#获取AccessKey-SecretKey" class="headerlink" title="获取AccessKey SecretKey"></a>获取AccessKey SecretKey</h2><p>上传图片 需要这两个参数，建议使用RAM子账号，授权OSS，不建议使用主账号的，风险大</p>
+<p>具体配置 ，<img src="http://oss.fantasywk.tech/img/image-20200621190946146.png" alt="image-20200621190946146" style="zoom:50%;"></p>
+<p>进入 AccessKey管理 。进入之后 ，会弹出一个对话框，选择开始使用子用户AccessKey，</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621191100008.png" alt="image-20200621191100008" style="zoom:50%;"></p>
+<p>创建子用户，选择 编程访问，点击确定，输入手机验证码验证身份</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621191135130.png" alt="image-20200621191135130" style="zoom:50%;"></p>
+<p>创建成功后，就会出现需要的信息，这里的信息只会显示一次，自己备份下来</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621191330029.png" alt="image-20200621191330029"></p>
+<p>返回到用户列表 ，找到刚才创建的子用户，给他添加一个OSS的权限</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621191527637.png" alt="image-20200621191527637"></p>
+<p>这里我们选择 FullAccess</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621191612360.png" alt="image-20200621191612360" style="zoom:50%;"></p>
+<p>至此，阿里云OSS这边的准备工作就完成了</p>
+<h2 id="使用图床工具验证"><a href="#使用图床工具验证" class="headerlink" title="使用图床工具验证"></a>使用图床工具验证</h2><p>这里我使用的是 <code>uPic</code> ，其他工具同理</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621191823247.png" alt="image-20200621191823247"></p>
+<p>空间名称就填你前面创建的bucket的名称，AccessKey 和 SecretKey 就是我们上面创建子账户的对应信息，如果配置了自己的域名，在域名一项中填写，如 <code>http://example.com</code>  ,填写完成后，点击验证，上传成功会自动复制访问url，到浏览器中验证一下。</p>
+<h2 id="Typora-中配置图片自动上传"><a href="#Typora-中配置图片自动上传" class="headerlink" title="Typora 中配置图片自动上传"></a>Typora 中配置图片自动上传</h2><p>如果你也使用的是 <code>Typora</code> 作为 <code>Markdown</code> 编辑器，可以参考下面步骤配置图片自动上传到OSS中：</p>
+<p>打开偏好设置  -&gt; 图像 ，更改 <code>插入图片时...</code>  选择上传图片 。下面的上传服务设定，选择你的图床工具软件，点击验证图片上传选项</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621192352363.png" alt="image-20200621192352363"></p>
+<p>出现下图就代表配置成功了！</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621192536556.png" alt="image-20200621192536556"></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://kevinwang0224.github.io/passages/aliyun-oss-img/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
     </div>
   
   
   
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-3-ex-evict/">
-          <span>Redis从入门到精通(三、Redis的过期策略和内存淘汰机制)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        04-30
-      </div>
-    </header>
-  </article>
+
   
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-2-data-types/">
-          <span>Redis从入门到精通(二、Redis的数据类型)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        04-29
-      </div>
-    </header>
-  </article>
-  
-  
-  <article class="posts-collapse">
-    <header>
-      <h2>
-        <a href="/passages/redis-1-install/">
-          <span>Redis从入门到精通(一、安装)</span>
-        </a>
-      </h2>
-      <div class="post-meta">
-        04-17
-      </div>
-    </header>
-  </article>
-  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Markdown/">
+              #Markdown
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
 </div>
-  <nav class="page-navigation">
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
     
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/git-commands/" target="_self">Lombok使用</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/windows-vmware-linux/" target="_self">Windows下使用VMWare搭建Linux环境</a>
+        <i class="iconfont icon-next"></i>
+      </div>
     
   </nav>
+
+   
+
+   
+
 </div>
+
 
       <footer>
   <p class="site-info">

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="wangkai , wangkai0224@foxmail.com">
+  
+  
+  
+  <title>Windows下使用VMWare搭建Linux环境 | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Linux,">
+  
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/fantasygg">
+          
+            <a href="https://github.com/fantasygg" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Windows下使用VMWare搭建Linux环境</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2020-06-21
+    </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><h3 id="安装VMWare"><a href="#安装VMWare" class="headerlink" title="安装VMWare"></a>安装VMWare</h3><p><strong>版本</strong> :VMware Workstation 15 Pro 15.5.6 build-16341506</p>
+<p>安装步骤没有过多可说的,。</p>
+<h3 id="下载-Linux发行版"><a href="#下载-Linux发行版" class="headerlink" title="下载 Linux发行版"></a>下载 Linux发行版</h3><p>由于我的云服务器一用的CentOS  ，也习惯了，所以这次也是使用了 CentOS </p>
+<p><strong>版本</strong> ： CentOS 7</p>
+<p>可以在 <a href="https://mirrors.tuna.tsinghua.edu.cn/centos/7.8.2003/isos/x86_64/" target="_blank" rel="noopener">清华镜像站</a>下载  ，一般情况 下载 4.5G 左右的这个</p>
+<p><img src="http://oss.fantasywk.tech/img/v6OC9bNfBqDYE8A.png" alt></p>
+<h2 id="创建虚拟机"><a href="#创建虚拟机" class="headerlink" title="创建虚拟机"></a>创建虚拟机</h2><ol>
+<li>打开 <code>vmware</code>  ,<code>文件 -&gt; 新建虚拟机</code></li>
+</ol>
+<p><img src="https://i.loli.net/2020/06/21/mySoviKqcQYVdIs.png" alt="image-20200621161145756" style="zoom:50%;"></p>
+<ol start="2">
+<li><p>新建向导  ，选择 自定义 ，下一步</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621161301330.png" alt="image-20200621161301330" style="zoom:50%;"></p>
+</li>
+<li><p>兼容性，默认，下一步</p>
+<p><img src="https://i.loli.net/2020/06/21/bcBws5QPZz1o4Gg.png" alt="image-20200621161434192" style="zoom:50%;"></p>
+</li>
+<li><p>光盘映像文件选择刚才下载的 ISO文件 ，下一步</p>
+<p><img src="https://i.loli.net/2020/06/21/dshVepmCi39YtRo.png" alt="image-20200621161541203" style="zoom:50%;"></p>
+</li>
+<li><p>设置用户名和密码 (这里不能使用root ，root默认会创建的)</p>
+<p><img src="https://i.loli.net/2020/06/21/sBA3LOuIya14MPQ.png" alt="image-20200621161701035" style="zoom:50%;"></p>
+</li>
+<li><p>选择虚拟机文件的位置 ，按照个人电脑硬盘空间选择即可</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621161758479.png" alt="image-20200621161758479" style="zoom:50%;"></p>
+</li>
+<li><p>cpu配置 ，内存配置，视个人情况而定，这里演示就选择了默认配置</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621161911131.png" alt="image-20200621161911131" style="zoom:50%;"></p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621161927341.png" alt="image-20200621161927341" style="zoom:50%;"></p>
+</li>
+<li><p>网络类型，这里选择 桥接网络，后面虚拟机网络需要这里的配置，否则和外部网络打不通</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621162021715.png" alt="image-20200621162021715" style="zoom:50%;"></p>
+</li>
+<li><p>I/O 控制器类型，硬盘类型 ，本着不懂就选择默认的原则，这里都选择默认选项</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621162117081.png" alt="image-20200621162117081" style="zoom:50%;"></p>
+</li>
+</ol>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621162200026.png" alt="image-20200621162200026" style="zoom:50%;"></p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621162232011.png" alt="image-20200621162232011" style="zoom:50%;"></p>
+<ol start="10">
+<li><p>配置最大磁盘大小，根据自己硬盘大小来配置</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621162312675.png" alt="image-20200621162312675" style="zoom:50%;"></p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621162336865.png" alt="image-20200621162336865" style="zoom:50%;"></p>
+</li>
+<li><p>都配置好后 点击完成 ，开始安装，倒杯茶静等几分钟</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621162407319.png" alt="image-20200621162407319" style="zoom:50%;"></p>
+<p>​        vmware 会自动配置 centos 的安装选项，正在安装中…  ,继续喝茶等待<img src="http://oss.fantasywk.tech/img/image-20200621162924279.png" alt="image-20200621162924279"></p>
+</li>
+<li><p>安装完成 ，当出现这个界面，代表系统已经安装好了</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621164225237.png" alt="image-20200621164225237" style="zoom:50%;"></p>
+</li>
+</ol>
+<h2 id="配置网络"><a href="#配置网络" class="headerlink" title="配置网络"></a>配置网络</h2><h3 id="为什么还要配置网络？"><a href="#为什么还要配置网络？" class="headerlink" title="为什么还要配置网络？"></a>为什么还要配置网络？</h3><p>进入系统后，打开终端软件 ，ping 一下百度，发现是ping不通的 ，宿主机也是ping不通的，没有网络肯定是不行的</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621164848519.png" alt="image-20200621164848519" style="zoom:50%;"></p>
+<h3 id="怎么配置？"><a href="#怎么配置？" class="headerlink" title="怎么配置？"></a>怎么配置？</h3><ol>
+<li><p>在 vmware 虚拟机网络编辑器中添加一个桥接模式的网络</p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621172520223.png" alt="image-20200621172520223" style="zoom:50%;"></p>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621172802643.png" alt="image-20200621172802643" style="zoom:50%;"></p>
+</li>
+</ol>
+<p>   需要注意的是，下面的2个网络要设置仅主机模式，主机连接显示为已连接</p>
+<p>   <img src="http://oss.fantasywk.tech/img/image-20200621172650262.png" alt="image-20200621172650262" style="zoom:50%;"></p>
+<ol start="2">
+<li>先检查一下虚拟机有没有网络适配器 ，没有的话需要添加一个，并且设置为桥接模式</li>
+</ol>
+<p><img src="http://oss.fantasywk.tech/img/image-20200621170706252.png" alt="image-20200621170706252" style="zoom:50%;"></p>
+<p><img src="https://kevinwang0224.oss-cn-beijing.aliyuncs.com/img/image-20200621170829866.png" alt="image-20200621170829866" style="zoom:50%;"></p>
+<ol start="2">
+<li>在终端输入 <code>dhclient</code> ，需要 <code>root</code> 用户的权限,先切换到 <code>root</code>  , <code>su root</code>    </li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">su root</span><br><span class="line"></span><br><span class="line">dhclient</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li><p>输入 <code>ifconfig</code>  可以看到  <code>ens36</code> 或者 <code>ens33</code></p>
+<p><img src="https://kevinwang0224.oss-cn-beijing.aliyuncs.com/img/image-20200621171001205.png" alt="image-20200621171001205" style="zoom:50%;"></p>
+</li>
+<li><p>修改<code>ens36</code> 的配置文件 ，到 <code>/etc/sysconfig/network-scripts</code> 目录下 ，看下有没有 <code>ifcfg-ens36</code> 或 <code>ifcfg-ens33</code> 文件，有的话编辑，没有的话需要创建一个文件来配置 , 可以直接复制下面的配置 。 </p>
+<p>其中几项比较重要: </p>
+<ol>
+<li>BOOTPROTO ： 指定为静态的 <code>static</code> ，后续ip就不会变了</li>
+<li>NAME  DEVICE : 要与 文件名和 ifconfig中看到的保持一致 这里就都是 <code>ens36</code></li>
+<li>ONBOOT :  yes 跟随系统启动</li>
+<li>IPADDR NETMASK  GATEWAY DNS1 ： 这几项要根据自己的网络配置，配置到局域网相同的ip段即可，不与其他ip冲突的 这里就是 <code>192.168.199.*</code>  </li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">TYPE=Ethernet</span><br><span class="line">PROXY_METHOD=none</span><br><span class="line">BROWSER_ONLY=no</span><br><span class="line">BOOTPROTO=static</span><br><span class="line">DEFROUTE=yes</span><br><span class="line">IPV4_FAILURE_FATAL=no</span><br><span class="line">IPV6INIT=yes</span><br><span class="line">IPV6_AUTOCONF=yes</span><br><span class="line">IPV6_DEFROUTE=yes</span><br><span class="line">IPV6_FAILURE_FATAL=no</span><br><span class="line">IPV6_ADDR_GEN_MODE=stable-privacy</span><br><span class="line">NAME=ens36</span><br><span class="line">UUID=824ec4bd-a9ae-4410-8346-17ce7f3dd111</span><br><span class="line">DEVICE=ens36</span><br><span class="line">ONBOOT=yes</span><br><span class="line">IPADDR=192.168.199.212</span><br><span class="line">NETMASK=255.255.255.0</span><br><span class="line">GATEWAY=192.168.199.1</span><br><span class="line">DNS1=192.168.199.1</span><br></pre></td></tr></table></figure>
+<p>修改后保存退出</p>
+</li>
+</ol>
+<ol start="5">
+<li><p>重启网络服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl restart network.service</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol start="6">
+<li><p>检查一下网络是否连通了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">   [test@localhost network-scripts]$ ping www.qq.com</span><br><span class="line">   PING public-v6.sparta.mig.tencent-cloud.net (220.194.111.148) 56(84) bytes of data.</span><br><span class="line">64 bytes from www.qq.com (220.194.111.148): icmp_seq=1 ttl=53 time=9.56 ms</span><br><span class="line">   64 bytes from www.qq.com (220.194.111.148): icmp_seq=2 ttl=53 time=13.4 ms</span><br><span class="line">64 bytes from www.qq.com (220.194.111.148): icmp_seq=3 ttl=53 time=20.3 ms</span><br><span class="line">   64 bytes from www.qq.com (220.194.111.148): icmp_seq=4 ttl=53 time=9.19 ms</span><br><span class="line">   64 bytes from www.qq.com (220.194.111.148): icmp_seq=5 ttl=53 time=9.92 ms</span><br><span class="line">   64 bytes from www.qq.com (220.194.111.148): icmp_seq=6 ttl=53 time=9.49 ms</span><br><span class="line">   ^C</span><br><span class="line">   --- public-v6.sparta.mig.tencent-cloud.net ping statistics ---</span><br><span class="line">   6 packets transmitted, 6 received, 0% packet loss, time 5009ms</span><br><span class="line">   rtt min/avg/max/mdev = 9.195/11.994/20.327/3.999 ms</span><br><span class="line">   [test@localhost network-scripts]$ ping 192.168.199.119</span><br><span class="line">   PING 192.168.199.119 (192.168.199.119) 56(84) bytes of data.</span><br><span class="line">   64 bytes from 192.168.199.119: icmp_seq=1 ttl=64 time=1129 ms</span><br><span class="line">   64 bytes from 192.168.199.119: icmp_seq=2 ttl=64 time=130 ms</span><br><span class="line">   64 bytes from 192.168.199.119: icmp_seq=3 ttl=64 time=82.8 ms</span><br><span class="line">   64 bytes from 192.168.199.119: icmp_seq=4 ttl=64 time=120 ms</span><br><span class="line">   64 bytes from 192.168.199.119: icmp_seq=5 ttl=64 time=30.8 ms</span><br><span class="line">   64 bytes from 192.168.199.119: icmp_seq=6 ttl=64 time=25.4 ms</span><br><span class="line">   64 bytes from 192.168.199.119: icmp_seq=7 ttl=64 time=63.0 ms</span><br><span class="line">   ^C</span><br><span class="line">   --- 192.168.199.119 ping statistics ---</span><br><span class="line">   8 packets transmitted, 7 received, 12% packet loss, time 7011ms</span><br><span class="line">   rtt min/avg/max/mdev = 25.445/226.124/1129.858/370.829 ms, pipe 2</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>   使用终端工具ssh连接，能连上则证明网络都没问题了</p>
+<h2 id="备注"><a href="#备注" class="headerlink" title="备注"></a>备注</h2><ol>
+<li><p>网络配置这里，有几个坑需要说明注意下 ，写这篇文章时有几个点和自己之前实践的地方不一样</p>
+<ol>
+<li>网络适配器这里，之前安装的虚拟机都是默认有的，这里没有，所以需要自己手机手动添加一个</li>
+<li>dhclient 这里，之前都是默认有网络适配器的，所以生成的网络名称是 ens33 ，这里之前没有适配器的时候生成了一次，是<code>lo</code> ,添加了适配器之后，又生成了一次，发现名称是 <code>ens36</code> ,和之前略有不同， <code>/etc/sysconfig/network-scripts</code> 目录下并没有ens36的配置文件，所以这里需要自己新建一个文件，之前的虚拟机都是默认有ens33的，只需要做一些改动即可。这里为个人理解只是名称不同，配置上即可。</li>
+</ol>
+</li>
+<li><p>我这里系统装好了之后是时区不对，在系统中改一下即可 </p>
+<p>​    <img src="https://kevinwang0224.oss-cn-beijing.aliyuncs.com/img/EPzyU1ue6DxwSpm.png" alt="image-20200621173515157" style="zoom:50%;"></p>
+</li>
+<li><p>搭建集群一个节点往往是不够的，重新安装又太麻烦，还耗费大量时间，可以直接克隆虚拟机 ，修改一下对应的网络配置即可</p>
+</li>
+</ol>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://kevinwang0224.github.io/passages/windows-vmware-linux/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Linux/">
+              #Linux
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/aliyun-oss-img/" target="_self">使用阿里云OSS搭建图床</a>
+      </div>
+    
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>
