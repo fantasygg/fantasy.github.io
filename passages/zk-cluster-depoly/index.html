@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="wangkai , wangkai0224@foxmail.com">
+  
+  
+  
+  <title>ZooKeeper集群搭建 | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Java,ZooKeeper,">
+  
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/kevinwang0224">
+          
+            <a href="https://github.com/kevinwang0224" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>ZooKeeper集群搭建</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2020-07-26
+    </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="单机启动"><a href="#单机启动" class="headerlink" title="单机启动"></a>单机启动</h2><h4 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h4><p><a href="https://zookeeper.apache.org/releases.html#download" target="_blank" rel="noopener">https://zookeeper.apache.org/releases.html#download</a></p>
+<h4 id="解压下载下来的压缩包"><a href="#解压下载下来的压缩包" class="headerlink" title="解压下载下来的压缩包"></a>解压下载下来的压缩包</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf apache-zookeeper-3.6.1-bin.tar.gz</span><br></pre></td></tr></table></figure>
+<h4 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd conf/</span><br><span class="line">mv zoo_sample.cfg zoo.cfg</span><br></pre></td></tr></table></figure>
+<p>这里单机启动我们就使用默认的配置文件，改个名即可</p>
+<blockquote>
+<p>配置中的 <code>dataDir</code> 和 <code>clientPort</code>  可以根据自己的需求改，<code>dataDir</code> 默认是在 <code>/tmp</code> 路径下的，一般是要修改的，这里演示就不做修改了 ，<code>clentPort</code> 可以根据自己的需要修改，默认是 2181端口</p>
+</blockquote>
+<h4 id="启动zk"><a href="#启动zk" class="headerlink" title="启动zk"></a>启动zk</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/zkServer.sh start</span><br></pre></td></tr></table></figure>
+<h4 id="测试客户端连接zk"><a href="#测试客户端连接zk" class="headerlink" title="测试客户端连接zk"></a>测试客户端连接zk</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/zkCli.sh -server 127.0.0.1:2181</span><br></pre></td></tr></table></figure>
+<p>输入 help 可以查看zkCli的命令，这里使用几条命令测试一下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[zk: 127.0.0.1:2181(CONNECTED) 2] ls /</span><br><span class="line">[zookeeper]</span><br><span class="line"></span><br><span class="line">[zk: 127.0.0.1:2181(CONNECTED) 15] create /test sample</span><br><span class="line">Created /test</span><br><span class="line"></span><br><span class="line">[zk: 127.0.0.1:2181(CONNECTED) 16] get /test</span><br><span class="line">sample</span><br><span class="line"></span><br><span class="line">[zk: 127.0.0.1:2181(CONNECTED) 17] set /test bar</span><br><span class="line"></span><br><span class="line">[zk: 127.0.0.1:2181(CONNECTED) 20] get /test</span><br><span class="line">bar</span><br><span class="line"></span><br><span class="line">[zk: 127.0.0.1:2181(CONNECTED) 21] delete /test</span><br><span class="line"></span><br><span class="line">[zk: 127.0.0.1:2181(CONNECTED) 23] ls /</span><br><span class="line">[zookeeper]</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="集群搭建"><a href="#集群搭建" class="headerlink" title="集群搭建"></a>集群搭建</h2><h4 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h4><ul>
+<li>3个节点 ，这里使用了3个虚拟机节点 ，我这里分别准备了 <code>192.168.199.238</code> <code>192.168.199.239</code> <code>192.168.199.240</code> 3个节点 </li>
+<li>将zk传到每个节点上</li>
+<li>开放服务器的 <code>2888</code> <code>3888</code> 端口 </li>
+</ul>
+<h4 id="解压压缩包"><a href="#解压压缩包" class="headerlink" title="解压压缩包"></a>解压压缩包</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf apache-zookeeper-3.6.1-bin.tar.gz</span><br></pre></td></tr></table></figure>
+<p>3个节点都执行一遍</p>
+<h4 id="修改配置文件-1"><a href="#修改配置文件-1" class="headerlink" title="修改配置文件"></a>修改配置文件</h4><p>到随便一个节点上修改，之后scp到其他几点即可。我这里到238节点上改。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim conf/zoo.cfg</span><br></pre></td></tr></table></figure>
+<p><img src="http://oss.fantasywk.tech/img/image-20200725162308471.png" alt="image-20200725162308471"></p>
+<p>上面框起来的两处配置项要注意</p>
+<ul>
+<li><p><code>dataDir</code>  这里在上面单机启动时没有修改，这里我们修改一下，可以根据自己的习惯设置 ，不在tmp下就行 ，这里设置了 <code>/data/zookeeper</code> </p>
+</li>
+<li><p><code>server.x</code>  这里是设置zk每个几点的host 和 开放通讯的端口 ，格式为 <code>server.x=host:port1:port2</code>  ，为什么需要两个端口呢，这里引用官网的解释：(简而言之，就是其中一个端口负责正常通讯，另一个端口要去选举leader)</p>
+<blockquote>
+<p>Finally, note the two port numbers after each server name: “ 2888” and “3888”. Peers use the former port to connect to other peers. Such a connection is necessary so that peers can communicate, for example, to agree upon the order of updates. More specifically, a ZooKeeper server uses this port to connect followers to the leader. When a new leader arises, a follower opens a TCP connection to the leader using this port. Because the default leader election also uses TCP, we currently require another port for leader election. This is the second port in the server entry.</p>
+</blockquote>
+</li>
+</ul>
+<p>配置文件改好后，我们还需要新建 <code>myid</code> 文件表示这个节点是 <code>server.x</code> 的哪个：到我们上面配置的 <code>dataDir</code> 目录下 (<code>/data/zookeper</code>) ,新建一个 <code>myid</code> 的 文件，写入 <code>server.x</code> 的 <code>x</code> ：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /data/zookeeper</span><br><span class="line">echo 1 &gt; myid</span><br></pre></td></tr></table></figure>
+<p>另外两个节点也执行相同的操作，写入对应的 <code>x</code> :</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">// 192.168.199.239</span><br><span class="line">cd /data/zookeeper</span><br><span class="line">echo 2 &gt; myid</span><br><span class="line"></span><br><span class="line">// 192.168.199.240</span><br><span class="line">cd /data/zookeeper</span><br><span class="line">echo 3 &gt; myid</span><br></pre></td></tr></table></figure>
+<h4 id="启动zk-1"><a href="#启动zk-1" class="headerlink" title="启动zk"></a>启动zk</h4><p>每个节点都执行启动命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./bin/zkServer.sh start</span><br></pre></td></tr></table></figure>
+<p>使用 <code>jps</code> 查看进程：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost apache-zookeeper-3.6.1-bin]# jps</span><br><span class="line">29372 Jps</span><br><span class="line">29245 QuorumPeerMain</span><br></pre></td></tr></table></figure>
+<p>QuorumPeerMain 就是 <code>zk</code> 的进程了</p>
+<p>3个节点都起来后，我们查看一下集群状态，验证是否成功启动了：</p>
+<p>238 ：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost apache-zookeeper-3.6.1-bin]# ./bin/zkServer.sh status</span><br><span class="line">/usr/bin/java</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/servers/apache-zookeeper-3.6.1-bin/bin/../conf/zoo.cfg</span><br><span class="line">Client port found: 2181. Client address: localhost.</span><br><span class="line">Mode: follower</span><br></pre></td></tr></table></figure>
+<p>239:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost apache-zookeeper-3.6.1-bin]# ./bin/zkServer.sh status</span><br><span class="line">/usr/bin/java</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/servers/apache-zookeeper-3.6.1-bin/bin/../conf/zoo.cfg</span><br><span class="line">Client port found: 2181. Client address: localhost.</span><br><span class="line">Mode: follower</span><br></pre></td></tr></table></figure>
+<p>240:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost apache-zookeeper-3.6.1-bin]# ./bin/zkServer.sh status</span><br><span class="line">/usr/bin/java</span><br><span class="line">ZooKeeper JMX enabled by default</span><br><span class="line">Using config: /opt/servers/apache-zookeeper-3.6.1-bin/bin/../conf/zoo.cfg</span><br><span class="line">Client port found: 2181. Client address: localhost.</span><br><span class="line">Mode: leader</span><br></pre></td></tr></table></figure>
+<p>可以看到 ，现在 240节点是 <code>leader</code>  ，其他两个节点是<code>follower</code> , 集群已经启动成功了。</p>
+<h4 id="测试客户端连接zk-1"><a href="#测试客户端连接zk-1" class="headerlink" title="测试客户端连接zk"></a>测试客户端连接zk</h4><p>我们使用 <code>zkCli</code> 连到  240 (主节点)验证是否可以正常使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">./zkCli.sh -server 192.168.199.240:2181</span><br><span class="line"></span><br><span class="line">[zk: 192.168.199.240:2181(CONNECTED) 0] ls /</span><br><span class="line">[zookeeper]</span><br><span class="line">[zk: 192.168.199.240:2181(CONNECTED) 1] create /foo bar</span><br><span class="line">Created /foo</span><br><span class="line">[zk: 192.168.199.240:2181(CONNECTED) 2] ls /</span><br><span class="line">[foo, zookeeper]</span><br><span class="line">[zk: 192.168.199.240:2181(CONNECTED) 3] get /foo</span><br><span class="line">bar</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><code>ZooKeeper</code> 作为一个基础的分布式协调服务，在很多地方都有使用 ,如 <code>dubbo</code> <code>kafka</code> <code>solr</code> 等 。</p>
+<p>总的来说，整个搭建过程还是很简单的。对zk的学习还需要更多的实践到项目中，加深对其的理解和使用。</p>
+<hr>
+<p>参考 ：</p>
+<p><a href="https://zookeeper.apache.org/doc/current/zookeeperStarted.html" target="_blank" rel="noopener">ZooKeeper Getting Started Guide </a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://kevinwang0224.github.io/passages/zk-cluster-depoly/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Java/">
+              #Java
+            </a>
+          </span>
+          
+          <span class="span--tag">
+            <a href="/tags/ZooKeeper/">
+              #ZooKeeper
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/windows-vmware-linux/" target="_self">Windows下使用VMWare搭建Linux环境</a>
+      </div>
+    
+    
+      <div class="nav-next">
+        下一篇:
+        <a href="/passages/post/" target="_self">post</a>
+        <i class="iconfont icon-next"></i>
+      </div>
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>
