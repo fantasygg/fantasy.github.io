@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  <meta name="author" content="wangkai , wangkai0224@foxmail.com">
+  
+  
+  
+  <title>Kafka集群搭建 | Wangkai&#39;s blog</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Hexo, theme-bmw">
+  
+
+  
+    <meta name="description" content="Java开发">
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">Fantasy</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a href="/" target="_self">
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a href="/archives/" target="_self">
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          
+            <a href="/categories/" target="_self">
+              分类
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a href="/tags/" target="_self">
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="https://github.com/kevinwang0224">
+          
+            <a href="https://github.com/kevinwang0224" target="_self">
+              Github
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>Kafka集群搭建</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2020-07-26
+    </span>
+    
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><ul>
+<li><code>Kafka</code> 依赖 <code>ZooKeeper</code> ，所以需要提前安装好  <code>ZooKeeper</code> ,启动单机的zk即可 。关于安装ZooKeeper的流程可以参考我之前写的：</li>
+<li>下载 <code>Kafka</code>   官网下载地址: <a href="https://kafka.apache.org/downloads" target="_blank" rel="noopener">https://kafka.apache.org/downloads</a></li>
+</ul>
+<hr>
+<h2 id="单机模式"><a href="#单机模式" class="headerlink" title="单机模式"></a>单机模式</h2><h4 id="解压安装包"><a href="#解压安装包" class="headerlink" title="解压安装包"></a>解压安装包</h4><p>解压我们下载的安装包；解压后进到kafka的目录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tar -xvf kafka_2.13-2.5.0.tgz</span><br><span class="line">cd kafka_2.13-2.5.0</span><br></pre></td></tr></table></figure>
+<h4 id="启动kafka"><a href="#启动kafka" class="headerlink" title="启动kafka"></a>启动kafka</h4><blockquote>
+<p>启动之前要先启动zk。 如果你的zk是在本地跑的且端口是默认的2181，无需修改配置文件；否则，你需要修改一下配置文件：</p>
+<p>在 <code>config/server.properties</code> 文件中 修改  <code>zookeeper.connect</code> 配置项为你的zk的地址即可。</p>
+<p>比如我的zk集群搭在3个虚拟机节点上，我这里需要修改为：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt; zookeeper.connect=192.168.199.238:2181,192.168.199.239:2181,192.168.199.240:2181</span><br><span class="line">&gt;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-server-start.sh config/server.properties</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">// 启动成功的日志：</span><br><span class="line">// ......</span><br><span class="line">// ......</span><br><span class="line">// INFO [KafkaServer id=0] started (kafka.server.KafkaServer)</span><br></pre></td></tr></table></figure>
+<h4 id="测试一下kafka的使用"><a href="#测试一下kafka的使用" class="headerlink" title="测试一下kafka的使用"></a>测试一下kafka的使用</h4><p>新开一个terminal ，创建一个名叫 <code>test</code> 的topic：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt; bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic test</span><br><span class="line">Created topic test.</span><br><span class="line"></span><br><span class="line">// 列出来kafka中的topic</span><br><span class="line">&gt; bin/kafka-topics.sh --list --bootstrap-server localhost:9092</span><br><span class="line">test</span><br></pre></td></tr></table></figure>
+<p>使用producer发送消息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&gt; bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic test</span><br><span class="line"></span><br><span class="line">// 发送的消息：</span><br><span class="line">&gt;ceshi</span><br><span class="line">&gt;test</span><br></pre></td></tr></table></figure>
+<p>再新开一个terminal ，使用消费者接收一下消息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&gt; bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning</span><br><span class="line"></span><br><span class="line">// 接收到的消息：</span><br><span class="line">ceshi</span><br><span class="line">test</span><br></pre></td></tr></table></figure>
+<p>可以看到，刚才prodcuer发的两条消息这边都打印出来了。单机的kafka就算完成了。接下来开始搭建3个节点的kafka集群。</p>
+<hr>
+<h2 id="集群搭建"><a href="#集群搭建" class="headerlink" title="集群搭建"></a>集群搭建</h2><h4 id="准备工作-1"><a href="#准备工作-1" class="headerlink" title="准备工作"></a>准备工作</h4><ul>
+<li>准备3个节点 ，这里使用了3个虚拟机节点 ，我这里准备了 <code>192.168.199.238</code> <code>192.168.199.239</code> <code>192.168.199.240</code> 3个节点</li>
+<li>3个节点都准备好kafka的安装包，并解压 ，具体命令参考上述 <code>单机模式</code> 的命令</li>
+</ul>
+<h4 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h4><p>主要修改三项配置：</p>
+<ul>
+<li><code>broker.id</code> 这个是必须要改的，且必须是个整形。需要保持唯一 。这里238对应 0，239对应1，240对应2</li>
+<li><code>listeners</code> ,这个也是必填的，默认是没有配置这一项的，注释掉了<ul>
+<li>238节点配置 ：<code>listeners=PLAINTEXT://192.168.199.238:9092</code></li>
+<li>239节点配置 ：<code>listeners=PLAINTEXT://192.168.199.239:9092</code></li>
+<li>240节点配置 ：<code>listeners=PLAINTEXT://192.168.199.240:9092</code></li>
+</ul>
+</li>
+<li><code>log.dirs</code> 这个路径默认是在 <code>/tmp</code> 下的，我们改掉它，我改到了 <code>/data/kafka-logs</code> ,可以根据自己的习惯改，或者选择不改它</li>
+<li><code>zookeeper.connect</code>  这个是zk的集群地址，可以根据自己的情况修改</li>
+</ul>
+<h4 id="启动kafka-1"><a href="#启动kafka-1" class="headerlink" title="启动kafka"></a>启动kafka</h4><p>3个节点分别执行启动命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/kafka-server-start.sh config/server.properties</span><br></pre></td></tr></table></figure>
+<h4 id="测试一下"><a href="#测试一下" class="headerlink" title="测试一下"></a>测试一下</h4><p><strong>创建一个topic</strong>：</p>
+<ul>
+<li>replication-factor 3  复制三份</li>
+<li>partitions 1 一个分区</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&gt; bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 3 --partitions 1 --topic repl-test</span><br><span class="line">OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N</span><br><span class="line">Created topic repl-test.</span><br></pre></td></tr></table></figure>
+<p><strong>查看一下刚才创建的topic的状态</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt; bin/kafka-topics.sh --describe --bootstrap-server localhost:9092 --topic repl-test</span><br><span class="line">OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N</span><br><span class="line">Topic: repl-test        PartitionCount: 1       ReplicationFactor: 3    Configs: segment.bytes=1073741824</span><br><span class="line">        Topic: repl-test        Partition: 0    Leader: 1       Replicas: 1,0,2 Isr: 1,0,2</span><br></pre></td></tr></table></figure>
+<p><strong>测试一下发送消息</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&gt; bin/kafka-console-producer.sh --bootstrap-server 192.168.199.239:9092 --topic repl-test-topic</span><br><span class="line"></span><br><span class="line">// 发送的消息： </span><br><span class="line">&gt;test message 1</span><br><span class="line">&gt;test message 2</span><br></pre></td></tr></table></figure>
+<p><strong>测试一下接收消息</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&gt; bin/kafka-console-consumer.sh --bootstrap-server 192.168.199.239:9092 --from-beginning --topic repl-test</span><br><span class="line">OpenJDK 64-Bit Server VM warning: If the number of processors is expected to increase from one, then you should configure the number of parallel GC threads appropriately using -XX:ParallelGCThreads=N</span><br><span class="line"></span><br><span class="line">// 接收到的消息：</span><br><span class="line">test message 1</span><br><span class="line">test message 2</span><br></pre></td></tr></table></figure>
+<p>接收消息也没问题了。</p>
+<p><strong>测试容灾</strong>：</p>
+<p>这里我把刚才producer 和 consumer 连接的 239节点给干掉，可以看到 consumer的日志打印,已经自动切换到了238节点上：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WARN [Consumer clientId=consumer-console-consumer-43719-1, groupId=console-consumer-43719] Connection to node 0 (/192.168.199.238:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)</span><br></pre></td></tr></table></figure>
+<p>再次测试发送消息接收消息：</p>
+<p>producer也打印了切换节点的日志：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">WARN [Producer clientId=console-producer] Connection to node 0 (/192.168.199.238:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)</span><br><span class="line"></span><br><span class="line">// producer ：</span><br><span class="line">&gt;test meesage 3</span><br><span class="line"></span><br><span class="line">// consumer：</span><br><span class="line">test meesage 3</span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Kafka 作为消息队列，在项目中也是很重要的一个部分，是要必须要掌握的。</p>
+<p>这里简单的总结一下集群搭建的流程，总体来说也是不难，参考官网文档可以很顺利的走下来，官网案例是在一台主机上启动了多个实例来搭建的伪集群，只要掌握了几个关键的地方，搭建一个真·集群也是非常容易的。</p>
+<hr>
+<p><strong>参考：</strong></p>
+<p><a href="https://kafka.apache.org/quickstart" target="_blank" rel="noopener">kafka quickstart</a></p>
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : Wang Kai <br>
+        
+        原文链接 : <a href>https://kevinwang0224.github.io/passages/kafka-cluter-deploy/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/passages/zk-cluster-depoly/" target="_self">ZooKeeper集群搭建</a>
+      </div>
+    
+    
+  </nav>
+
+   
+
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    Copyright © Wangkai 2019. All Rights Reserved.
+    <br>
+    Powered by <a href="https://hexo.io">Hexo</a>  & Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a>
+    <br>
+    博客已运行<span id="time-to-now"></span>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2019, 3, 14).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>
